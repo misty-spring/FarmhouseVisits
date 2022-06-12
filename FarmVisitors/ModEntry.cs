@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using GenericModConfigMenu;
@@ -30,7 +30,6 @@ namespace FarmVisitors
             ModHelper = this.Helper;
             ModMonitor = this.Monitor;
             ModVisitor = this.VisitorName;
-            Game1Random = Game1.random;
         }
 
         private void GameLaunched(object sender, GameLaunchedEventArgs e)
@@ -110,7 +109,7 @@ namespace FarmVisitors
         }
         private void SaveLoaded(object sender, SaveLoadedEventArgs e)
         {
-            MaxTimeStay = Config.Duration--;
+            MaxTimeStay = (Config.Duration - 1);
             if (Config.Verbose == true)
             {
                 this.Monitor.Log($"MaxTimeStay = {MaxTimeStay}; Config.Duration = {Config.Duration};");
@@ -207,13 +206,13 @@ namespace FarmVisitors
                     }
                 }
             }
-            if(HasAnyVisitors is true)
+            if(HasAnyVisitors == true)
             {
                 foreach (NPC c in farmHouseAsLocation.characters)
                 {
                     if (Config.Verbose == true)
                     {
-                        this.Monitor.Log($"Checking {c}...");
+                        this.Monitor.Log($"Checking {c.Name}...");
                     }
                     if(Values.IsVisitor(c.Name))
                     {
@@ -234,9 +233,9 @@ namespace FarmVisitors
 
                             if (Config.Verbose == true)
                             {
-                                this.Monitor.Log($"HasAnyVisitors = false, CounterToday = {CounterToday}, TodaysVisitors= {TodaysVisitors.ToArray()}, DurationSoFar = {DurationSoFar}, ControllerTime = {ControllerTime}, VisitorName = {VisitorName}, ModVisitor = {ModVisitor}");
+                                this.Monitor.Log($"HasAnyVisitors = false, CounterToday = {CounterToday}, TodaysVisitors= {Actions.TurnToString(TodaysVisitors)}, DurationSoFar = {DurationSoFar}, ControllerTime = {ControllerTime}, VisitorName = {VisitorName}, ModVisitor = {ModVisitor}");
                             }
-
+                            return;
                         }
                         else
                         {
@@ -247,6 +246,7 @@ namespace FarmVisitors
 
                             if(c.controller is not null && ControllerTime >=1)
                             {
+                                c.Halt();
                                 c.controller = null;
                                 ControllerTime = 0;
                                 if(Config.Verbose == true)
@@ -254,14 +254,20 @@ namespace FarmVisitors
                                     this.Monitor.Log($"ControllerTime = {ControllerTime}");
                                 }
                             }
-                            else
+                            else if(e.NewTime > TimeOfArrival)
                             {
-                                //Actions.MoveAroundHouse(c, farmHouse);
                                 c.controller = new PathFindController(c, farmHouse, farmHouse.getRandomOpenPointInHouse(Game1.random), Random.Next(0, 4));
                                 ControllerTime++;
                                 if(Config.Verbose == true)
                                 {
                                     this.Monitor.Log($"ControllerTime = {ControllerTime}");
+                                }
+                            }
+                            else
+                            {
+                                if (Config.Verbose == true)
+                                {
+                                    this.Monitor.Log($"Time of arrival equals current time. NPC won't move around");
                                 }
                             }
 
@@ -276,7 +282,7 @@ namespace FarmVisitors
                     {
                         if(Config.Verbose == true)
                         {
-                            this.Monitor.Log($"{c} is not marked as visit.");
+                            this.Monitor.Log($"{c.Name} is not marked as visit.");
                         }
                     }
                 }
@@ -286,7 +292,7 @@ namespace FarmVisitors
         {
             TodaysVisitors.Clear();
             CounterToday = 0;
-            MaxTimeStay = Config.Duration--;
+            MaxTimeStay = (Config.Duration - 1);
             if (Config.Verbose == true)
             {
                 this.Monitor.Log("Clearing today's visitor list...");
@@ -359,7 +365,6 @@ namespace FarmVisitors
         internal static IMonitor ModMonitor { get; private set; }
         internal static IModHelper ModHelper { get; private set; }
         internal static string ModVisitor { get; private set; }
-        internal static Random Game1Random { get; private set; }
 
         internal static Random Random
         {
