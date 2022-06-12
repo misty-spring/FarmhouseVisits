@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using StardewValley;
 using System;
 using System.Collections.Generic;
@@ -50,7 +50,7 @@ namespace FarmVisitors
 
         internal static string GetIntroDialogue(NPC npcv)
         {
-            var r = ModEntry.Game1Random.Next(1,4);
+            var r = Game1.random.Next(1,4);
 
             if(npcv.SocialAnxiety.Equals(0))
             {
@@ -64,8 +64,8 @@ namespace FarmVisitors
 
         internal static string StringByPersonality(NPC instance)
         {
-            var r = ModEntry.Game1Random.Next(1,4);
-            
+            var r = Game1.random.Next(1, 4);
+
             if (instance.SocialAnxiety.Equals(1)) //shy?
             {
                 return ModEntry.ModHelper.Translation.Get($"NPCGreet.Shy{r}");
@@ -97,8 +97,8 @@ namespace FarmVisitors
         {
             //Dictionary<string, string> StringsFromCS = ModEntry.ModHelper.GameContent.Load<Dictionary<string, string>>("Strings\\StringsFromCSFiles");
 
-            var r = ModEntry.Game1Random.Next(1,4);
-            
+            var r = Game1.random.Next(1, 4);
+
             if (instance.SocialAnxiety.Equals(1)) //shy?
             {
                 //return StringsFromCS.GetValueOrDefault("NPC.cs.4071");
