@@ -1,0 +1,10 @@
+﻿{
+  "Name": "Farmhouse visits",
+  "Author": "mistyspring",
+  "Version": "1.0.0",
+  "Description": "Mod that allows villagers to visit you.",
+  "UniqueID": "mistyspring.farmvisitors",
+  "EntryDll": "FarmVisitors.dll",
+  "MinimumApiVersion": "3.14.0",
+  "UpdateKeys": ["nexus:12457"]
+}

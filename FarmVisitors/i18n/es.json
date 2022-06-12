@@ -1,0 +1,40 @@
+﻿{
+	"config.CustomChance.name": "Probabilidad",
+	"config.CustomChance.description": "El % de que alguien te visite cada 10 minutos.",
+	"config.MaxVisitsPerDay.name": "Máximo de visitas por día",
+	"config.MaxVisitsPerDay.description": "El máximo de visitas que puedes recibir en un día",
+	"config.StartingHours.name": "Hora de inicio",
+	"config.StartingHours.description": "La hora en la que comenzarás a recibir visitas.",
+	"config.EndingHours.name": "Hora de término",
+	"config.EndingHours.description": "La hora en la que terminarás de recibir visitas.",
+	"config.VisitDuration.name":"Duración",
+	"config.VisitDuration.description":"Cuánto tiempo durará cada visita, en intervalos de 10 minutos (e.j. 3 \= 30 minutos).",
+	"config.Verbose.name": "Verbose",
+	"config.Verbose.description": "El mod registrará mucha más información.",
+
+	"NPCIntroduce.Outgoing1": "¿@? ¡Voy a entrar!",
+	"NPCIntroduce.Outgoing2": "¿@? ¡Soy yo!",
+	"NPCIntroduce.Outgoing3": "¿@? ¡Abre la puerta!",
+	"NPCIntroduce.Shy1": "@, ¿Estas ahí?",
+	"NPCIntroduce.Shy2": "¿@?",
+	"NPCIntroduce.Shy3": "¿Hola? ¿Hay alguien en casa?",
+
+	"NPCWalkIn.Outgoing1": "¡Hola, {0}!",
+	"NPCWalkIn.Outgoing2": "¡Hey!",
+	"NPCWalkIn.Outgoing3": "¡Hola!",
+	"NPCWalkIn.Shy1": "Hola, {0}.",
+	"NPCWalkIn.Shy2": "Con permiso.",
+	"NPCWalkIn.Shy3": "Hola.",
+
+	"NPCGreet.Outgoing1": "Hey. ¿Qué tal? Quería pasar a visitarte. Mira, te traje un regalo.[{0}]",
+	"NPCGreet.Outgoing2": "Hola. ¿Cómo va la granja? Vine a ver cómo iba todo.$1#$b#Te traje un regalo.[{0}]",
+	"NPCGreet.Outgoing3": "Hello! I haven't seen you in a while.$1#$b#Here, I brought you a gift.[{0}]",
+	"NPCGreet.Shy1": "Hola, ¿Cómo has estado?#$b#Parece que la granja %farm ha crecido.#$b#Te traje un regalo.[{0}]",
+	"NPCGreet.Shy2": "Hola, @.#$b#Estaba pasando y decidí visitarte.#$b#Te traje un regalo.[{0}]",
+	"NPCGreet.Shy3": "Hey, @. It's nice to see you.#$b#I was wondering how you were doing.#$b#I brought you a gift for the troubles.[{0}]",
+
+	"NPCRetiring.Outgoing": "Tengo que irme... pero la pasé bien.#$b#¡Te veré luego!$1",
+	"NPCRetiring.Shy": "El tiempo vuela...tengo que irme.#$b#Me alegro de verte.",
+
+	"NPCGoneWhileOutside": "Mientras estabas afuera, {0} se retiró."
+}

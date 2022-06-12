@@ -1,0 +1,40 @@
+﻿{
+	"config.CustomChance.name": "Custom chance",
+	"config.CustomChance.description": "The % of a villager visiting you every 10 minutes.",
+	"config.MaxVisitsPerDay.name": "Max visits per day",
+	"config.MaxVisitsPerDay.description": "How many visits you can receive in a day.",
+	"config.StartingHours.name": "Starting hours",
+	"config.StartingHours.description": "The hour villagers will begin visiting at.",
+	"config.EndingHours.name": "Ending hours",
+	"config.EndingHours.description": "The hour villagers will stop visiting at.",
+	"config.VisitDuration.name":"Duration",
+	"config.VisitDuration.description":"How long each visit should last, in 10 minute intervals (e.g 3 \= 30 minutes).",
+	"config.Verbose.name": "Verbose logging",
+	"config.Verbose.description": "The mod will log way more info.",
+
+	"NPCIntroduce.Outgoing1": "@? I'm coming in!",
+	"NPCIntroduce.Outgoing2": "@? It's me!",
+	"NPCIntroduce.Outgoing3": "@? Open the door!",
+	"NPCIntroduce.Shy1": "@, are you there?",
+	"NPCIntroduce.Shy2": "@?",
+	"NPCIntroduce.Shy3": "Hello? Is anyone home?",
+
+	"NPCWalkIn.Outgoing1": "Hi, {0}!",
+	"NPCWalkIn.Outgoing2": "Hey!",
+	"NPCWalkIn.Outgoing3": "Hello!",
+	"NPCWalkIn.Shy1": "Hi, {0}",
+	"NPCWalkIn.Shy2": "Excuse me.",
+	"NPCWalkIn.Shy3": "Hello",
+
+	"NPCGreet.Outgoing1": "Hey. How's it going? Thought i'd pass by and give you a visit.$1#$b#I brought you a gift.[{0}]",
+	"NPCGreet.Outgoing2": "Hi. How's your farm coming along? Thought i'd come check myself.$1#$b#I brought you a gift.[{0}]",
+	"NPCGreet.Outgoing3": "Hello! I haven't seen you in a while.$1#$b#Here, I brought you a gift.[{0}]",
+	"NPCGreet.Shy1": "Hi, @. How have you been?#$b#Seems the %farm farm has been growing.#$b#I brought you a gift.[{0}]",
+	"NPCGreet.Shy2": "Hello, @.#$b#I was passing by and decided to visit.#$b#I brought you a gift.[{0}]",
+	"NPCGreet.Shy3": "Hey, @. It's nice to see you.#$b#I was wondering how you were doing.#$b#I brought you a gift for the troubles.[{0}]",
+
+	"NPCRetiring.Outgoing": "It's been fun, but I have to go. I'll see you later!",
+	"NPCRetiring.Shy": "It's getting late...I'll be going now. It was nice seeing you.",
+
+	"NPCGoneWhileOutside": "While you were outside, {0} took their leave."
+}
