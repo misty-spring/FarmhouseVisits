@@ -6,6 +6,7 @@ using StardewValley.Network;
 using StardewValley.Objects;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FarmVisitors
 {
@@ -99,14 +100,12 @@ namespace FarmVisitors
                 c.ignoreScheduleToday = false;
                 c.followSchedule = true;
 
-                Game1.warpCharacter(c, "BusStop", new Point(2, 23));
+                WarpHome(c);
 
-                c.InvalidateMasterSchedule();
-
-                c.checkSchedule(currentTime);
-
-                if (c.Schedule is null)
+                if(c.Schedule is null)
                 {
+                    c.InvalidateMasterSchedule();
+
                     var sched = c.getSchedule(Game1.dayOfMonth);
                     c.Schedule.Clear();
                     foreach (KeyValuePair<int, SchedulePathDescription> pair in sched)
@@ -115,6 +114,7 @@ namespace FarmVisitors
                     }
                 }
 
+                c.checkSchedule(currentTime);
                 c.moveCharacterOnSchedulePath();
                 c.warpToPathControllerDestination();
             }
@@ -124,23 +124,35 @@ namespace FarmVisitors
             }
         }
 
-        private static string ParseSchedule(NPC c)
+        private static void WarpHome(NPC c)
         {
-            var time = Game1.timeOfDay;
-            var schedulename = c.dayScheduleName;
-            var schedule = c.getMasterScheduleEntry(schedulename);
-            string[] array = schedule.Split('/');
-            foreach(string s in array)
+            try
             {
-                string[] schedulepart = s.Split(' ');
-                var scheduletime = Int16.Parse(schedulepart[0]);
-                if(scheduletime > time)
-                {
-                    string scheduleloc = schedulepart[1];
-                    return scheduleloc;
-                }
+                //get dict from cached one in ModEntry
+                Dictionary<string, string> dictionary = ModEntry.NPCDisp;
+
+                //make array with NPC info
+                string[] array = dictionary[c.Name].Split('/');
+
+                //check second-to-last position (which is the map they spawn in)
+                int PositionToCheck = array.Length - 1;
+
+                //make a new array with the info of that position, split by each space/" "
+                string[] InitialMap = array[PositionToCheck].Split(' ');
+                ModEntry.ModMonitor.Log($"{c.Name} initial map: {InitialMap[0]}");
+
+                //get X, Y from the array (point will use these to warp)
+                var x = Int16.Parse(InitialMap[1]);
+                var y = Int16.Parse(InitialMap[2]);
+                ModEntry.ModMonitor.Log($"{c.Name} position: {InitialMap[1]}, {InitialMap[2]}");
+
+                //finally, warp NPC to location at x,y we grabbed before
+                Game1.warpCharacter(c, c.DefaultMap, c.DefaultPosition);
             }
-            return "Town";
+            catch (Exception ex)
+            {
+                ModEntry.ModMonitor.Log($"Error while warping back home: {ex}", LogLevel.Error);
+            }
         }
 
         internal static string TurnToString(List<string> list)
