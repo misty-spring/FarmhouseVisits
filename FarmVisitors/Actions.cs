@@ -3,10 +3,8 @@ using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Locations;
 using StardewValley.Network;
-using StardewValley.Objects;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace FarmVisitors
 {
@@ -55,11 +53,6 @@ namespace FarmVisitors
 
         }
 
-        internal static void MoveAroundHouse(NPC c, FarmHouse farmHouse)
-        {
-            c.controller = new PathFindController(c, farmHouse, farmHouse.getRandomOpenPointInHouse(Game1.random), 2);
-        }
-
         internal static void Retire(NPC c, int currentTime, FarmHouse farmHouse)
         {
             if (Game1.currentLocation == farmHouse)
@@ -80,14 +73,30 @@ namespace FarmVisitors
                 finally
                 {
                     Game1.drawDialogue(c, Values.GetRetireDialogue(c));
-
                     ReturnToNormal(c, currentTime);
                     Game1.currentLocation.playSound("doorClose", NetAudio.SoundContext.NPC);
                 }
             }
             else
             {
-                Game1.drawDialogueBox(string.Format(Values.GetNPCGone(), c.Name));
+                try
+                {
+                    if (c.controller is not null)
+                    {
+                        c.Halt();
+                        c.controller = null;
+                    }
+                    ReturnToNormal(c, currentTime);
+                    //Game1.drawDialogueBox(string.Format(Values.GetNPCGone(), c.Name));
+                    Game1.drawObjectDialogue(string.Format(Values.GetNPCGone(), c.Name));
+                    /* above: taken from StardewValley.Events/SoundInTheNightEvent.cs
+                     * this.message = Game1.content.LoadString("Strings\\Events:SoundInTheNight_UFO");
+                     */
+                }
+                catch (Exception ex)
+                {
+                    ModEntry.ModMonitor.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
+                }
             }
         }
         internal static void ReturnToNormal(NPC c, int currentTime)
@@ -100,9 +109,11 @@ namespace FarmVisitors
                 c.ignoreScheduleToday = false;
                 c.followSchedule = true;
 
-                WarpHome(c);
+                Point PositionFixed = new((int)(c.DefaultPosition.X / 64), (int)(c.DefaultPosition.Y / 64));
 
-                if(c.Schedule is null)
+                Game1.warpCharacter(c, c.DefaultMap, PositionFixed);
+
+                if (c.Schedule is null)
                 {
                     c.InvalidateMasterSchedule();
 
@@ -121,37 +132,6 @@ namespace FarmVisitors
             catch(Exception ex)
             {
                 ModEntry.ModMonitor.Log($"Error while returning NPC: {ex}", LogLevel.Error);
-            }
-        }
-
-        private static void WarpHome(NPC c)
-        {
-            try
-            {
-                //get dict from cached one in ModEntry
-                Dictionary<string, string> dictionary = ModEntry.NPCDisp;
-
-                //make array with NPC info
-                string[] array = dictionary[c.Name].Split('/');
-
-                //check second-to-last position (which is the map they spawn in)
-                int PositionToCheck = array.Length - 1;
-
-                //make a new array with the info of that position, split by each space/" "
-                string[] InitialMap = array[PositionToCheck].Split(' ');
-                ModEntry.ModMonitor.Log($"{c.Name} initial map: {InitialMap[0]}");
-
-                //get X, Y from the array (point will use these to warp)
-                var x = Int16.Parse(InitialMap[1]);
-                var y = Int16.Parse(InitialMap[2]);
-                ModEntry.ModMonitor.Log($"{c.Name} position: {InitialMap[1]}, {InitialMap[2]}");
-
-                //finally, warp NPC to location at x,y we grabbed before
-                Game1.warpCharacter(c, c.DefaultMap, c.DefaultPosition);
-            }
-            catch (Exception ex)
-            {
-                ModEntry.ModMonitor.Log($"Error while warping back home: {ex}", LogLevel.Error);
             }
         }
 
