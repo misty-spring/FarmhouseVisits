@@ -12,11 +12,6 @@ namespace FarmVisitors
 {
     public class ModEntry : Mod
     {
-        /*********
-        ** Public methods
-        *********/
-        /// <summary>The mod entry point, called after the mod is first loaded.</summary>
-        /// <param name="helper">Provides simplified APIs for writing mods.</param>
         public override void Entry(IModHelper helper)
         {
             helper.Events.GameLoop.GameLaunched += this.GameLaunched;
@@ -24,20 +19,29 @@ namespace FarmVisitors
             helper.Events.GameLoop.TimeChanged += this.OnTimeChange;
             helper.Events.GameLoop.DayEnding += this.DayEnding;
             helper.Events.GameLoop.ReturnedToTitle += this.TitleReturn;
+            helper.Events.Content.AssetRequested += Extras.AssetRequest;
 
             this.Config = this.Helper.ReadConfig<ModConfig>();
 
             ModHelper = this.Helper;
             ModMonitor = this.Monitor;
             ModVisitor = this.VisitorName;
+            //VisitorData = VisitorData;
 
-            if (Config.Debug is true)
+            if (Config.Verbose is true)
             {
                 helper.ConsoleCommands.Add("force_visit", helper.Translation.Get("CLI.force_visit"), this.ForceVisit);
                 helper.ConsoleCommands.Add("print_all", helper.Translation.Get("CLI.print_all"), this.PrintAll);
+                helper.ConsoleCommands.Add("vi_reload", helper.Translation.Get("CLI.reload"), this.Reload);
+                helper.ConsoleCommands.Add("tt", "title return", returntotitle);
             }
         }
-        
+
+        private void returntotitle(string arg1, string[] arg2)
+        {
+            Game1.ExitToTitle();
+        }
+
         private void GameLaunched(object sender, GameLaunchedEventArgs e)
         {
             //check values and clear them if needed
@@ -74,6 +78,23 @@ namespace FarmVisitors
                 min: 0,
                 max: 24,
                 interval: 1
+            );
+            configMenu.AddPageLink(
+                mod: this.ModManifest,
+                pageId: "Extras",
+                text: Extras.ExtrasTL
+            );
+
+            configMenu.AddPage(
+                mod: this.ModManifest,
+                pageId: "Extras"
+            );
+            configMenu.AddTextOption(
+                mod: this.ModManifest,
+                getValue: () => this.Config.Blacklist,
+                setValue: value => this.Config.Blacklist = value,
+                name: Extras.BlacklistTL,
+                tooltip: Extras.BlacklistTTP
             );
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
@@ -115,6 +136,13 @@ namespace FarmVisitors
         }
         private void SaveLoaded(object sender, SaveLoadedEventArgs e)
         {
+            CleanTempData(this);
+
+            if (!string.IsNullOrWhiteSpace(Config.Blacklist))
+            {
+                ParseBlacklist(this);
+            }
+
             /*for testing friendshipdata
             Farmer player = Game1.MasterPlayer;
             var fdata = player.friendshipData;
@@ -157,7 +185,21 @@ namespace FarmVisitors
                     {
                         if (!Values.IsMarriedToPlayer(npcn) && hearts is not 0) //npc isnt married and value isnt 0
                         {
-                            NameAndLevel.Add(name, hearts);
+                            if(BlacklistParsed is not null)
+                            {
+                                if (BlacklistParsed.Contains(npcn.Name))
+                                {
+                                    this.Monitor.Log($"{npcn.displayName} (internal name {npcn.Name}) is in the blacklist.", LogLevel.Info);
+                                }
+                                else
+                                {
+                                    NameAndLevel.Add(name, hearts);
+                                }
+                            }
+                            else
+                            {
+                                NameAndLevel.Add(name, hearts);
+                            }
                         }
                         else
                         {
@@ -202,166 +244,311 @@ namespace FarmVisitors
             {
                 this.Monitor.Log($"Furniture count: {FurnitureList.Count}");
             }
+
+            ReloadCustomschedules(this);
         }
         private void OnTimeChange(object sender, TimeChangedEventArgs e)
         {
-            if (IsConfigValid == false || RepeatedByLV.Count is 0)
+            if (IsConfigValid == false || RepeatedByLV is null)
             {
                 return;
             }
 
-            if(HasAnyVisitors is false && CounterToday < Config.MaxVisitsPerDay && (e.NewTime > Config.StartingHours && e.NewTime < Config.EndingHours))
+            if (e.NewTime > Config.StartingHours && e.NewTime < Config.EndingHours)
             {
-                if (Random.Next(1, 101) <= Config.CustomChance && Game1.currentLocation == farmHouseAsLocation)
+                if (HasAnyVisitors is false && CounterToday < Config.MaxVisitsPerDay && SchedulesParsed is not null) //custom
                 {
-                    // choose a random character from a list
-                    var RChoice = Random.Next(0,(RepeatedByLV.Count + 1));
-                    VisitorName = RepeatedByLV[RChoice];
-                    ModVisitor = VisitorName;
-                    if(Config.Verbose == true)
+                    foreach (KeyValuePair<string, ScheduleData> pair in SchedulesParsed)
                     {
-                        this.Monitor.Log($"Random: {RChoice}; VisitorName= {VisitorName}; ModVisitor= {ModVisitor}");
+                        if (e.NewTime.Equals(pair.Value.From))
+                        {
+                            currentCustom.Add(pair.Key, pair.Value);
+
+                            VisitorName = pair.Key;
+                            ModVisitor = VisitorName;
+
+                            NPC visit = Game1.getCharacterFromName(VisitorName);
+                            VisitorData = new TempNPC(visit);
+
+                            Actions.AddCustom(visit, farmHouse, currentCustom[VisitorName]);
+
+                            DurationSoFar = 0;
+
+                            HasAnyVisitors = true;
+                            TimeOfArrival = e.NewTime;
+                            ControllerTime = 0;
+                            CustomVisiting = true;
+
+                            if (Config.Verbose == true)
+                            {
+                                this.Monitor.Log($"\nHasAnyVisitors set to true.\n{VisitorName} will begin visiting player.\nTimeOfArrival = {e.NewTime};\nControllerTime = {ControllerTime};");
+                            }
+
+                            break;
+                        }
                     }
+                } //custom
 
-                    if(!TodaysVisitors.Contains(VisitorName))
+                if (HasAnyVisitors is false && CounterToday < Config.MaxVisitsPerDay) //random
+                {
+                    if (Random.Next(1, 101) <= Config.CustomChance && Game1.currentLocation == farmHouseAsLocation)
                     {
-                        //add them to farmhouse
-                        Actions.AddToFarmHouse(VisitorName, farmHouse);
-                        DurationSoFar = 0;
-                        //(added to method) Game1.warpCharacter(Game1.getCharacterFromName(VisitorName), "FarmHouse", houseSize);
-
-                        HasAnyVisitors = true;
-                        TimeOfArrival = e.NewTime;
-                        ControllerTime = 0;
+                        // choose a random character from a list
+                        var RChoice = Random.Next(0, (RepeatedByLV.Count));
+                        VisitorName = RepeatedByLV[RChoice];
+                        ModVisitor = VisitorName;
 
                         if (Config.Verbose == true)
                         {
-                            this.Monitor.Log($"\nHasAnyVisitors set to true.\n{VisitorName} will begin visiting player.\nTimeOfArrival = {e.NewTime};\nControllerTime = {ControllerTime};");
+                            this.Monitor.Log($"Random: {RChoice}; VisitorName= {VisitorName}; ModVisitor= {ModVisitor}");
                         }
-                    }
-                    else
-                    {
-                        this.Monitor.Log($"{VisitorName} has already visited the Farm today!");
-                    }
-                }
-            }
-            if(HasAnyVisitors == true)
-            {
-                foreach (NPC c in farmHouseAsLocation.characters)
-                {
-                    if (Config.Verbose == true)
-                    {
-                        this.Monitor.Log($"Checking {c.Name}...");
-                    }
-                    if(Values.IsVisitor(c.Name))
-                    {
-                        if(DurationSoFar >= MaxTimeStay)
+
+                        if (!TodaysVisitors.Contains(VisitorName))
                         {
-                            if (Config.Verbose == true)
-                            {
-                                this.Monitor.Log($"{c.Name} is retiring for the day.");
-                            }
-                            Actions.Retire(c, e.NewTime, farmHouse);
-                            HasAnyVisitors = false;
-                            CounterToday++;
-                            TodaysVisitors.Add(VisitorName);
+                            CustomVisiting = false;
+
+                            //save values
+                            NPC visit = Game1.getCharacterFromName(VisitorName);
+                            VisitorData = new TempNPC(visit);
+
+                            //add them to farmhouse
+                            Actions.AddToFarmHouse(visit, farmHouse);
                             DurationSoFar = 0;
+
+                            HasAnyVisitors = true;
+                            TimeOfArrival = e.NewTime;
                             ControllerTime = 0;
-                            VisitorName = null;
-                            ModVisitor = VisitorName;
 
                             if (Config.Verbose == true)
                             {
-                                this.Monitor.Log($"HasAnyVisitors = false, CounterToday = {CounterToday}, TodaysVisitors= {Actions.TurnToString(TodaysVisitors)}, DurationSoFar = {DurationSoFar}, ControllerTime = {ControllerTime}, VisitorName = {VisitorName}, ModVisitor = {ModVisitor}");
+                                this.Monitor.Log($"\nHasAnyVisitors set to true.\n{VisitorName} will begin visiting player.\nTimeOfArrival = {e.NewTime};\nControllerTime = {ControllerTime};");
                             }
-                            return;
+                        }
+                        else
+                        {
+                            VisitorName = null;
+                            ModVisitor = null;
+                            this.Monitor.Log($"{VisitorName} has already visited the Farm today!");
+                        }
+                    }
+                } //random
+            }
+            
+            if (HasAnyVisitors == true && CustomVisiting == false)
+            {
+                NPC c = Game1.getCharacterFromName(VisitorName);
+                if (Values.IsVisitor(c.Name))
+                {
+                    if (DurationSoFar >= MaxTimeStay)
+                    {
+                        if (Config.Verbose == true)
+                        {
+                            this.Monitor.Log($"{c.Name} is retiring for the day.");
+                        }
+                        Actions.Retire(c, e.NewTime, farmHouse);
+                        HasAnyVisitors = false;
+                        CounterToday++;
+                        TodaysVisitors.Add(VisitorName);
+                        DurationSoFar = 0;
+                        ControllerTime = 0;
+                        VisitorName = null;
+                        ModVisitor = VisitorName;
+
+                        VisitorData = null;
+
+                        if (Config.Verbose == true)
+                        {
+                            this.Monitor.Log($"HasAnyVisitors = false, CounterToday = {CounterToday}, TodaysVisitors= {Actions.TurnToString(TodaysVisitors)}, DurationSoFar = {DurationSoFar}, ControllerTime = {ControllerTime}, VisitorName = {VisitorName}, ModVisitor = {ModVisitor}");
+                        }
+                        return;
+                    }
+                    else
+                    {
+                        if (Config.Verbose == true)
+                        {
+                            this.Monitor.Log($"{c.Name} will move around the house now.");
+                        }
+
+                        if (c.controller is not null && ControllerTime >= 1)
+                        {
+                            c.Halt();
+                            c.controller = null;
+                            ControllerTime = 0;
+                            if (Config.Verbose == true)
+                            {
+                                this.Monitor.Log($"ControllerTime = {ControllerTime}");
+                            }
+                        }
+                        else if (e.NewTime > TimeOfArrival)
+                        {
+                            c.controller = new PathFindController(c, farmHouse, farmHouse.getRandomOpenPointInHouse(Game1.random), Random.Next(0, 4));
+
+                            if (Random.Next(0, 11) <= 5 && FurnitureList is not null)
+                            {
+                                c.setNewDialogue(string.Format(Values.TalkAboutFurniture(c), Values.GetRandomFurniture()), true, false);
+                                if (Config.Verbose == true)
+                                {
+                                    this.Monitor.Log($"Adding dialogue for {c.Name}...");
+                                }
+                            }
+
+                            ControllerTime++;
+                            if (Config.Verbose == true)
+                            {
+                                this.Monitor.Log($"ControllerTime = {ControllerTime}");
+                            }
                         }
                         else
                         {
                             if (Config.Verbose == true)
                             {
-                                this.Monitor.Log($"{c.Name} will move around the house now.");
+                                this.Monitor.Log($"Time of arrival equals current time. NPC won't move around");
+                            }
+                        }
+
+                        DurationSoFar++;
+                        if (Config.Verbose == true)
+                        {
+                            this.Monitor.Log($"DurationSoFar = {DurationSoFar} ({DurationSoFar * 10} minutes).");
+                        }
+                    }
+                }
+                else
+                {
+                    if (Config.Verbose == true)
+                    {
+                        this.Monitor.Log($"{c.Name} is not marked as visit.");
+                    }
+                }
+            }
+
+            if (HasAnyVisitors == true && CustomVisiting == true)
+            {
+                NPC c = Game1.getCharacterFromName(VisitorName);
+                if (DurationSoFar >= MaxTimeStay || e.NewTime.Equals(currentCustom[VisitorName].To))
+                {
+                    if (Config.Verbose == true)
+                    {
+                        this.Monitor.Log($"{c.Name} is retiring for the day.");
+                    }
+
+                    //if has custom dialogue: exit with custom. else normal
+                    var exitd = currentCustom[VisitorName].ExitDialogue;
+                    if(!string.IsNullOrWhiteSpace(exitd))
+                    {
+                        Actions.RetireCustom(c, e.NewTime, farmHouse, exitd);
+                    }
+                    else
+                    {
+                        Actions.Retire(c, e.NewTime, farmHouse);
+                    }
+
+                    HasAnyVisitors = false;
+                    TodaysVisitors.Add(VisitorName);
+                    DurationSoFar = 0;
+                    ControllerTime = 0;
+                    VisitorName = null;
+                    ModVisitor = VisitorName;
+                    CustomVisiting = false;
+                    currentCustom.Clear();
+
+                    VisitorData = null;
+
+                    if (Config.Verbose == true)
+                    {
+                        this.Monitor.Log($"HasAnyVisitors = false, CounterToday = {CounterToday}, TodaysVisitors= {Actions.TurnToString(TodaysVisitors)}, DurationSoFar = {DurationSoFar}, ControllerTime = {ControllerTime}, VisitorName = {VisitorName}, ModVisitor = {ModVisitor}");
+                    }
+                    return;
+                }
+                else
+                {
+                    if (Config.Verbose == true)
+                    {
+                        this.Monitor.Log($"{c.Name} will move around the house now.");
+                    }
+
+                    if (c.controller is not null && ControllerTime >= 1)
+                    {
+                        c.Halt();
+                        c.controller = null;
+                        ControllerTime = 0;
+                        if (Config.Verbose == true)
+                        {
+                            this.Monitor.Log($"ControllerTime = {ControllerTime}");
+                        }
+                    }
+                    else if (e.NewTime > TimeOfArrival)
+                    {
+                        c.controller = new PathFindController(c, farmHouse, farmHouse.getRandomOpenPointInHouse(Game1.random), Random.Next(0, 4));
+
+                        if (currentCustom[VisitorName].Dialogues.Any<string>())
+                        {
+                            c.setNewDialogue(currentCustom[VisitorName].Dialogues[0], true, false);
+
+                            this.Monitor.Log($"Adding custom dialogue for {c.Name}...");
+                            if (Config.Verbose == true)
+                            {
+                                this.Monitor.Log($"Custom dialogue: {currentCustom[VisitorName].Dialogues[0]}");
                             }
 
-                            if(c.controller is not null && ControllerTime >=1)
+                            //remove this dialogue
+                            currentCustom[VisitorName].Dialogues.RemoveAt(0);
+                        }
+                        else if (Random.Next(0, 11) <= 5 && FurnitureList is not null)
+                        {
+                            c.setNewDialogue(string.Format(Values.TalkAboutFurniture(c), Values.GetRandomFurniture()), true, false);
+                            if (Config.Verbose == true)
                             {
-                                c.Halt();
-                                c.controller = null;
-                                ControllerTime = 0;
-                                if(Config.Verbose == true)
-                                {
-                                    this.Monitor.Log($"ControllerTime = {ControllerTime}");
-                                }
+                                this.Monitor.Log($"Adding dialogue for {c.Name}...");
                             }
-                            else if(e.NewTime > TimeOfArrival)
-                            {
-                                c.controller = new PathFindController(c, farmHouse, farmHouse.getRandomOpenPointInHouse(Game1.random), Random.Next(0, 4));
-                                
-                                if(Random.Next(0, 11) <= 5 && FurnitureList.Count is not 0)
-                                {
-                                    c.setNewDialogue(string.Format(Values.TalkAboutFurniture(c), Values.GetRandomFurniture()), true, false);
-                                    if (Config.Verbose == true)
-                                    {
-                                        this.Monitor.Log($"Adding dialogue for {c.Name}...");
-                                    }
-                                }
-                                
-                                ControllerTime++;
-                                if(Config.Verbose == true)
-                                {
-                                    this.Monitor.Log($"ControllerTime = {ControllerTime}");
-                                }
-                            }
-                            else
-                            {
-                                if (Config.Verbose == true)
-                                {
-                                    this.Monitor.Log($"Time of arrival equals current time. NPC won't move around");
-                                }
-                            }
+                        }
 
-                            DurationSoFar++;
-                            if(Config.Verbose == true)
-                            {
-                                this.Monitor.Log($"DurationSoFar = {DurationSoFar} ({DurationSoFar * 10} minutes).");
-                            }
+                        ControllerTime++;
+                        if (Config.Verbose == true)
+                        {
+                            this.Monitor.Log($"ControllerTime = {ControllerTime}");
                         }
                     }
                     else
                     {
-                        if(Config.Verbose == true)
-                        {
-                            this.Monitor.Log($"{c.Name} is not marked as visit.");
-                        }
+                        this.Monitor.Log($"Time of arrival equals current time. NPC won't move around");
+                    }
+
+                    //to check that value isnt 0 AND that its a valid one. (doesnt need parsing since thats done at the start)
+                    if(currentCustom[VisitorName].To < 610)
+                    {
+                        DurationSoFar++;
+                    }
+
+                    if (Config.Verbose == true)
+                    {
+                        this.Monitor.Log($"DurationSoFar = {DurationSoFar} ({DurationSoFar * 10} minutes).");
                     }
                 }
             }
         }
         private void DayEnding(object sender, DayEndingEventArgs e)
         {
-            TodaysVisitors.Clear();
-            CounterToday = 0;
-            if(MaxTimeStay != (Config.Duration - 1))
+            CleanTempData(this);
+
+            ReloadCustomschedules(this);
+            
+            if (BlacklistRaw != Config.Blacklist && !string.IsNullOrWhiteSpace(Config.Blacklist))
             {
-                MaxTimeStay = (Config.Duration - 1);
-                this.Monitor.Log($"MaxTimeStay = {MaxTimeStay}; Config.Duration = {Config.Duration};");
+                ParseBlacklist(this);
+            }
+            else if(string.IsNullOrWhiteSpace(Config.Blacklist))
+            {
+                BlacklistRaw = null;
+                if(BlacklistParsed is not null)
+                {
+                    BlacklistParsed.Clear();
+                }
             }
 
             if (Config.Verbose == true)
             {
-                this.Monitor.Log("Clearing today's visitor list...");
-                this.Monitor.Log("Clearing today's visitor count...");
-                
-            }
-
-            if (FurnitureList is not null)
-            {
-                FurnitureList.Clear();
-            }
-            FurnitureList = Values.UpdateFurniture(farmHouse);
-            if (Config.Verbose == true)
-            {
-                this.Monitor.Log($"Furniture list updated. Count: {FurnitureList.Count}");
+                this.Monitor.Log("Clearing today's visitor list, visitor count, and all other temp info...");
             }
         }
         private void TitleReturn(object sender, ReturnedToTitleEventArgs e)
@@ -372,21 +559,87 @@ namespace FarmVisitors
             {
                 this.Monitor.Log($"Removing cached information: HasAnyVisitors= {HasAnyVisitors}, TimeOfArrival={TimeOfArrival}, CounterToday={CounterToday}, VisitorName={VisitorName}. TodaysVisitors, NameAndLevel, FurnitureList, and RepeatedByLV cleared.");
             }
+
+            if(SchedulesParsed is not null)
+            {
+                SchedulesParsed.Clear();
+            }
         }
 
+        //methods used by mod
+        private static void ParseBlacklist(ModEntry entry)
+        {
+            BlacklistRaw = entry.Config.Blacklist;
+            var charsToRemove = new string[] { "-", ",", ".", ";", "\"", "\'", "/" };
+            foreach (var c in charsToRemove)
+            {
+                BlacklistRaw = BlacklistRaw.Replace(c, string.Empty);
+            }
+            if(entry.Config.Verbose == true)
+            {
+                entry.Monitor.Log($"Raw blacklist: \n {BlacklistRaw} \nWill be parsed to list now.");
+            }
+            BlacklistParsed = BlacklistRaw.Split(' ').ToList();
+        }
+        private static void CleanTempData(ModEntry entry)
+        {
+            ModVisitor = null;
+            VisitorData = null;
+            entry.VisitorName = null;
+            entry.CounterToday = 0;
+
+            entry.CustomVisiting = false;
+            entry.HasAnyVisitors = false;
+
+            if (currentCustom is not null)
+            {
+                currentCustom.Clear();
+            }
+
+            if(entry.TodaysVisitors is not null)
+            {
+                entry.TodaysVisitors.Clear();
+            }
+            
+            if(entry.MaxTimeStay != (entry.Config.Duration - 1))
+            {
+                entry.MaxTimeStay = (entry.Config.Duration - 1);
+                entry.Monitor.Log($"MaxTimeStay = {entry.MaxTimeStay}; Config.Duration = {entry.Config.Duration};");
+            }
+            
+            if (FurnitureList is not null)
+            {
+                FurnitureList.Clear();
+                FurnitureList = Values.UpdateFurniture(Utility.getHomeOfFarmer(Game1.MasterPlayer));
+
+                if (entry.Config.Verbose == true)
+                {
+                    entry.Monitor.Log($"Furniture list updated. Count: {FurnitureList.Count}");
+                }
+            }
+        }
         private static void ClearValues(ModEntry modEntry)
         {
-            if (modEntry.RepeatedByLV.Count is not 0)
+            if (!string.IsNullOrWhiteSpace(modEntry.Config.Blacklist))
+            {
+                ParseBlacklist(modEntry);
+            }
+            else
+            {
+                BlacklistRaw = null;
+                if (BlacklistParsed is not null)
+                {
+                    BlacklistParsed.Clear();
+                }
+            }
+
+            if (modEntry.RepeatedByLV is not null)
             {
                 modEntry.RepeatedByLV.Clear();
             }
-            if (modEntry.TodaysVisitors.Count is not 0)
+            if (modEntry.TodaysVisitors is not null)
             {
                 modEntry.TodaysVisitors.Clear();
-            }
-            if (modEntry.NameAndLevel.Count is not 0)
-            {
-                modEntry.NameAndLevel.Clear();
             }
             if (modEntry.HasAnyVisitors == true)
             {
@@ -412,90 +665,199 @@ namespace FarmVisitors
             {
                 modEntry.ControllerTime = 0;
             }
+            if (modEntry.CustomVisiting is true)
+            {
+                modEntry.CustomVisiting = false;
+            }
+            if (currentCustom is not null)
+            {
+                currentCustom.Clear();
+            }
+            if (NameAndLevel is not null)
+            {
+                NameAndLevel.Clear();
+            }
             if (FurnitureList is not null)
             {
                 FurnitureList.Clear();
             }
+
+            if (VisitorData is not null)
+            {
+                VisitorData = null;
+            }
+        }
+        private static void ReloadCustomschedules(ModEntry entry)
+        {
+            if(SchedulesParsed is not null)
+            {
+                SchedulesParsed.Clear();
+            }
+            else
+            {
+                return;
+            }
+
+            var schedules = ModHelper.GameContent.Load<Dictionary<string, ScheduleData>>("mistyspring.farmhousevisits/Schedules");
+            if (schedules is not null)
+            {
+                foreach(KeyValuePair<string, ScheduleData> pair in schedules)
+                {
+                    entry.Monitor.Log($"Checking {pair.Key}'s schedule...");
+                    if(!Extras.IsScheduleValid(pair))
+                    {
+                        entry.Monitor.Log($"{pair.Key} schedule won't be added.", LogLevel.Error);
+                    }
+                    else
+                    {
+                        SchedulesParsed.Add(pair.Key, pair.Value);
+                    }
+                }
+            }
         }
 
+
+        //console commands
+        private void Reload(string command, string[] arg2)
+        {
+            if (!string.IsNullOrWhiteSpace(Config.Blacklist))
+            {
+                ParseBlacklist(this);
+            }
+
+            NPCDisp = Game1.content.Load<Dictionary<string, string>>("Data\\NPCDispositions");
+
+            MaxTimeStay = (Config.Duration - 1);
+            if (Config.Verbose == true)
+            {
+                this.Monitor.Log($"MaxTimeStay = {MaxTimeStay}; Config.Duration = {Config.Duration};");
+            }
+
+            farmHouseAsLocation = Utility.getHomeOfFarmer(Game1.MasterPlayer);
+            farmHouse = Utility.getHomeOfFarmer(Game1.MasterPlayer);
+
+            if (Config.StartingHours >= Config.EndingHours)
+            {
+                this.Monitor.Log("Starting hours can't happen after ending hours! To use the mod, fix this and reload savefile.", LogLevel.Error);
+                IsConfigValid = false;
+                return;
+            }
+            else
+            {
+                IsConfigValid = true;
+            }
+
+            foreach (string name in Game1.NPCGiftTastes.Keys)
+            {
+                if (Config.Debug == true)
+                {
+                    this.Monitor.Log($"Name: {name}", LogLevel.Trace);
+                }
+                if (!name.StartsWith("Universal_") && name is not null)
+                {
+                    int hearts = Game1.MasterPlayer.getFriendshipHeartLevelForNPC(name);
+                    NPC npcn = Game1.getCharacterFromName(name);
+
+                    if (npcn is not null)
+                    {
+                        if (!Values.IsMarriedToPlayer(npcn) && hearts is not 0) //npc isnt married and value isnt 0
+                        {
+                            if (BlacklistParsed.Contains(npcn.Name))
+                            {
+                                this.Monitor.Log($"{npcn.displayName} (internal name {npcn.Name}) is in the blacklist.", LogLevel.Info);
+                            }
+                            else
+                            {
+                                NameAndLevel.Add(name, hearts);
+                            }
+                        }
+                        else
+                        {
+                            if (Config.Verbose == true)
+                            {
+                                this.Monitor.Log($"{name} won't be added to the list.");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        this.Monitor.Log($"{name} is not an existing NPC!");
+                    }
+
+                }
+            }
+            string call = "\n Name   | Hearts\n--------------------";
+            foreach (KeyValuePair<string, int> pair in NameAndLevel)
+            {
+                call += $"\n   {pair.Key}   {pair.Value}";
+
+                List<string> tempdict = Enumerable.Repeat(pair.Key, pair.Value).ToList();
+                RepeatedByLV.AddRange(tempdict);
+            }
+            this.Monitor.Log(call);
+            if (Config.Verbose == true)
+            {
+                string LongString = "ALL values:   ";
+                foreach (string item in RepeatedByLV)
+                {
+                    LongString = $"{LongString}, {item}";
+                }
+                this.Monitor.Log(LongString);
+            }
+
+            if (FurnitureList is not null)
+            {
+                FurnitureList.Clear();
+            }
+            FurnitureList = Values.UpdateFurniture(farmHouse);
+            if (Config.Verbose == true)
+            {
+                this.Monitor.Log($"Furniture count: {FurnitureList.Count}");
+
+            }
+        }
         private void ForceVisit(string command, string[] arg2)
         {
             if (Context.IsWorldReady)
             {
-                if (!string.IsNullOrWhiteSpace(arg2[0]) && NPCDisp.Keys.Contains(arg2[0]))
+                if (Game1.MasterPlayer.currentLocation == farmHouse)
                 {
-                    if (Game1.MasterPlayer.currentLocation == farmHouse)
+                    var RChoice = Random.Next(0, (RepeatedByLV.Count));
+                    VisitorName = RepeatedByLV[RChoice];
+                    ModVisitor = VisitorName;
+                    if (Config.Verbose == true)
                     {
-                        VisitorName = arg2[0];
-                        ModVisitor = arg2[0];
+                        this.Monitor.Log($"VisitorName= {VisitorName}; ModVisitor= {ModVisitor}");
+                    }
+
+                    if (!TodaysVisitors.Contains(VisitorName))
+                    {
+
+                        //save values
+                        NPC visit = Game1.getCharacterFromName(VisitorName);
+                        VisitorData = new TempNPC(visit);
+
+                        //add them to farmhouse
+                        Actions.AddToFarmHouse(visit, farmHouse);
+                        DurationSoFar = 0;
+
+                        HasAnyVisitors = true;
+                        TimeOfArrival = Game1.timeOfDay;
+                        ControllerTime = 0;
+
                         if (Config.Verbose == true)
                         {
-                            this.Monitor.Log($"VisitorName= {VisitorName}; ModVisitor= {ModVisitor}");
-                        }
-
-                        if (!TodaysVisitors.Contains(VisitorName))
-                        {
-                            Actions.AddToFarmHouse(VisitorName, farmHouse);
-                            DurationSoFar = 0;
-
-                            HasAnyVisitors = true;
-                            TimeOfArrival = Game1.timeOfDay;
-                            ControllerTime = 0;
-
-                            if (Config.Verbose == true)
-                            {
-                                this.Monitor.Log($"\nHasAnyVisitors set to true.\n{VisitorName} will begin visiting player.\nTimeOfArrival = {TimeOfArrival};\nControllerTime = {ControllerTime};");
-                            }
-                        }
-                        else
-                        {
-                            this.Monitor.Log($"{VisitorName} has already visited the Farm today!");
+                            this.Monitor.Log($"\nHasAnyVisitors set to true.\n{VisitorName} will begin visiting player.\nTimeOfArrival = {TimeOfArrival};\nControllerTime = {ControllerTime};");
                         }
                     }
                     else
                     {
-                        this.Monitor.Log(Helper.Translation.Get("error.NotInFarmhouse"), LogLevel.Error);
-                    }
-                }
-                else if (string.IsNullOrWhiteSpace(arg2[0]))
-                {
-                    if (Game1.MasterPlayer.currentLocation == farmHouse)
-                    {
-                        var RChoice = Random.Next(0, (RepeatedByLV.Count + 1));
-                        VisitorName = RepeatedByLV[RChoice];
-                        ModVisitor = VisitorName;
-                        if (Config.Verbose == true)
-                        {
-                            this.Monitor.Log($"VisitorName= {VisitorName}; ModVisitor= {ModVisitor}");
-                        }
-
-                        if (!TodaysVisitors.Contains(VisitorName))
-                        {
-                            Actions.AddToFarmHouse(VisitorName, farmHouse);
-                            DurationSoFar = 0;
-
-                            HasAnyVisitors = true;
-                            TimeOfArrival = Game1.timeOfDay;
-                            ControllerTime = 0;
-
-                            if (Config.Verbose == true)
-                            {
-                                this.Monitor.Log($"\nHasAnyVisitors set to true.\n{VisitorName} will begin visiting player.\nTimeOfArrival = {TimeOfArrival};\nControllerTime = {ControllerTime};");
-                            }
-                        }
-                        else
-                        {
-                            this.Monitor.Log($"{VisitorName} has already visited the Farm today!");
-                        }
-                    }
-                    else
-                    {
-                        this.Monitor.Log(Helper.Translation.Get("error.NotInFarmhouse"), LogLevel.Error);
+                        this.Monitor.Log($"{VisitorName} has already visited the Farm today!");
                     }
                 }
                 else
                 {
-                    this.Monitor.Log(Helper.Translation.Get("error.InvalidValue"), LogLevel.Error);
+                    this.Monitor.Log(Helper.Translation.Get("error.NotInFarmhouse"), LogLevel.Error);
                 }
             }
             else
@@ -508,15 +870,16 @@ namespace FarmVisitors
             this.Monitor.Log($"VisitorName = {VisitorName}; IsConfigValid = {IsConfigValid}; HasAnyVisitors = {HasAnyVisitors}; TimeOfArrival = {TimeOfArrival}; CounterToday = {CounterToday}; DurationSoFar = {DurationSoFar}; MaxTimeStay = {MaxTimeStay}; ControllerTime = {ControllerTime}");
         }
 
+        //data
         private ModConfig Config;
         private List<string> RepeatedByLV = new();
         private List<string> TodaysVisitors = new();
-        private Dictionary<string, int> NameAndLevel = new();
         private static Random random;
 
         internal static IMonitor ModMonitor { get; private set; }
         internal static IModHelper ModHelper { get; private set; }
         internal static string ModVisitor { get; private set; }
+        internal static TempNPC VisitorData { get; private set; }
 
         internal static Random Random
         {
@@ -528,9 +891,11 @@ namespace FarmVisitors
         }
 
         internal GameLocation farmHouseAsLocation;
-        internal FarmHouse farmHouse;
+        internal FarmHouse farmHouse { get; private set; }
         
+        internal static string BlacklistRaw { get; private set; }
         internal string VisitorName { get; private set; }
+        internal bool CustomVisiting { get; private set; }
         internal bool IsConfigValid { get; private set; }
         internal bool HasAnyVisitors { get; private set; }
         internal int TimeOfArrival { get; private set; }
@@ -538,7 +903,11 @@ namespace FarmVisitors
         internal int DurationSoFar { get; private set; }
         internal int MaxTimeStay { get; private set; }
         internal int ControllerTime { get; private set; }
+        internal static Dictionary<string, int> NameAndLevel { get; private set; } = new();
         internal static Dictionary<string, string> NPCDisp { get; private set; }
         internal static List<Furniture> FurnitureList { get; private set; }
+        internal static List<string> BlacklistParsed { get; private set; }
+        internal static Dictionary<string, ScheduleData> SchedulesParsed { get; private set; }
+        internal static Dictionary<string, ScheduleData> currentCustom { get; private set; }
     }
 }
