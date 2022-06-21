@@ -28,18 +28,12 @@ namespace FarmVisitors
             ModVisitor = this.VisitorName;
             //VisitorData = VisitorData;
 
-            if (Config.Verbose is true)
+            if (Config.Debug is true)
             {
                 helper.ConsoleCommands.Add("force_visit", helper.Translation.Get("CLI.force_visit"), this.ForceVisit);
                 helper.ConsoleCommands.Add("print_all", helper.Translation.Get("CLI.print_all"), this.PrintAll);
                 helper.ConsoleCommands.Add("vi_reload", helper.Translation.Get("CLI.reload"), this.Reload);
-                helper.ConsoleCommands.Add("tt", "title return", returntotitle);
             }
-        }
-
-        private void returntotitle(string arg1, string[] arg2)
-        {
-            Game1.ExitToTitle();
         }
 
         private void GameLaunched(object sender, GameLaunchedEventArgs e)
