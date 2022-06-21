@@ -3,6 +3,10 @@ A mod that allows villagers to visit you.
 
 ## Features
 You can add a blacklist via config; this will be read every time you load a save (and every time your farmer goes to sleep).
+Villagers will bring a gift once they visit.
+The visitor will also walk around and comment on your furniture.
+Once the (user-set) visit time has reached its limit, the character will tell you they're going away (and return to whichever action they were doing pre-visit).
+Customizable start and end hours, along with chance for every 10 minutes and max visits per day.
 
 You can make characters visit you at any time you want- just edit `mistyspring.farmhousevisits/Schedules` via ContentPatcher. Because you're editing via CP, you can use conditions just fine.
 
