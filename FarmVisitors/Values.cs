@@ -9,14 +9,14 @@ namespace FarmVisitors
     {
         internal static bool IsMarriedToPlayer(NPC c)
         {
-            /*npc replacers will cause conflicts (friendshipdata checks internal but it seems to fail somehow)
-             * tried using c.displayName but to no avail
+            /* npc replacers will cause conflicts (friendshipdata checks internal but it seems to fail somehow)
+             * using c.displayName as fix
             */
             if (c is null)
             {
                 return false;
             }
-            else if (Game1.IsMultiplayer)
+            /*else if (Game1.IsMultiplayer)
             {
                 foreach(Farmer eachFarmer in Game1.getAllFarmers())
                 {
@@ -33,7 +33,7 @@ namespace FarmVisitors
                     }
                 }
                 return false;
-            }
+            }*/
             else
             {         
                 Farmer player = Game1.MasterPlayer;
@@ -69,28 +69,64 @@ namespace FarmVisitors
         internal static string GetIntroDialogue(NPC npcv)
         {
             var r = Game1.random.Next(1,4);
-
-            if(npcv.SocialAnxiety.Equals(0))
+            int type = Game1.random.Next(0,3);
+            if(type is 0)
             {
-                return ModEntry.ModHelper.Translation.Get($"NPCIntroduce.Outgoing{r}");
+                if(npcv.SocialAnxiety.Equals(0))
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCIntroduce.Outgoing{r}");
+                }
+                else
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCIntroduce.Shy{r}");
+                }
             }
             else
             {
-                return ModEntry.ModHelper.Translation.Get($"NPCIntroduce.Shy{r}");
+                if (npcv.Manners.Equals(1)) //polite
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCIntroduce.Polite{r}");
+                }
+                else if (npcv.Manners.Equals(2)) //rude
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCIntroduce.Rude{r}");
+                }
+                else //neutral
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCIntroduce.Neutral{r}");
+                }
             }
         }
 
-        internal static string StringByPersonality(NPC instance)
+        internal static string StringByPersonality(NPC c)
         {
             var r = Game1.random.Next(1, 4);
-
-            if (instance.SocialAnxiety.Equals(1)) //shy?
+            int type = Game1.random.Next(0,3);
+            if(type is 0)
             {
-                return ModEntry.ModHelper.Translation.Get($"NPCGreet.Shy{r}");
+                if(c.SocialAnxiety.Equals(0))
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCGreet.Outgoing{r}");
+                }
+                else
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCGreet.Shy{r}");
+                }
             }
             else
             {
-                return ModEntry.ModHelper.Translation.Get($"NPCGreet.Outgoing{r}");
+                if (c.Manners.Equals(1)) //polite
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCGreet.Polite{r}");
+                }
+                else if (c.Manners.Equals(2)) //rude
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCGreet.Rude{r}");
+                }
+                else //neutral
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCGreet.Neutral{r}");
+                }
             }
         }
 
@@ -101,27 +137,64 @@ namespace FarmVisitors
 
         internal static string GetRetireDialogue(NPC c)
         {
-            if(c.SocialAnxiety.Equals(0))
+            int type = Game1.random.Next(0,3);
+            if(type is 0)
             {
-                return ModEntry.ModHelper.Translation.Get("NPCRetiring.Outgoing");
+                if(c.SocialAnxiety.Equals(0))
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCRetiring.Outgoing");
+                }
+                else
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCRetiring.Shy");
+                }
             }
             else
             {
-                return ModEntry.ModHelper.Translation.Get("NPCRetiring.Shy");
+                if (c.Manners.Equals(1)) //polite
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCRetiring.Polite");
+                }
+                else if (c.Manners.Equals(2)) //rude
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCRetiring.Rude");
+                }
+                else //neutral
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCRetiring.Neutral");
+                }
             }
         }
 
-        internal static string GetTextOverHead(NPC instance)
+        internal static string GetTextOverHead(NPC c)
         {
             var r = Game1.random.Next(1, 4);
-
-            if (instance.SocialAnxiety.Equals(1)) //shy?
+            int type = Game1.random.Next(0,3);
+            if(type is 0)
             {
-                return ModEntry.ModHelper.Translation.Get($"NPCWalkIn.Shy{r}");
+                if(c.SocialAnxiety.Equals(0))
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCWalkIn.Outgoing{r}");
+                }
+                else
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCWalkIn.Shy{r}");
+                }
             }
             else
             {
-                return ModEntry.ModHelper.Translation.Get($"NPCWalkIn.Outgoing{r}");
+                if (c.Manners.Equals(1)) //polite
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCWalkIn.Polite{r}");
+                }
+                else if (c.Manners.Equals(2)) //rude
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCWalkIn.Rude{r}");
+                }
+                else //neutral
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCWalkIn.Neutral{r}");
+                }
             }
         }
 
@@ -153,14 +226,32 @@ namespace FarmVisitors
         internal static string TalkAboutFurniture(NPC c)
         {
             var r = Game1.random.Next(1, 4);
-
-            if (c.SocialAnxiety.Equals(1)) //shy?
+            int type = Game1.random.Next(0,3);
+            if(type is 0)
             {
-                return ModEntry.ModHelper.Translation.Get($"NPCFurniture.Shy{r}");
+                if(c.SocialAnxiety.Equals(0))
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCFurniture.Outgoing{r}");
+                }
+                else
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCFurniture.Shy{r}");
+                }
             }
             else
             {
-                return ModEntry.ModHelper.Translation.Get($"NPCFurniture.Outgoing{r}");
+                if (c.Manners.Equals(1)) //polite
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCFurniture.Polite{r}");
+                }
+                else if (c.Manners.Equals(2)) //rude
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCFurniture.Rude{r}");
+                }
+                else //neutral
+                {
+                    return ModEntry.ModHelper.Translation.Get($"NPCFurniture.Neutral{r}");
+                }
             }
         }
         internal static string GetRandomFurniture()
