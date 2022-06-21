@@ -9,6 +9,7 @@ A mod that allows villagers to visit you.
 - Customizable start and end hours, along with chance for every 10 minutes and max visits per day.
 - Scheduled visits (via CP patching of the schedule file).
 
+## Scheduled visits
 You can make characters visit you at any time you want- just edit `mistyspring.farmhousevisits/Schedules` via ContentPatcher. Because you're editing via CP, you can use conditions just fine.
 
 Example:
