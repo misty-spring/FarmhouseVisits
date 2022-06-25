@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Locations;
@@ -11,6 +11,8 @@ namespace FarmVisitors
 {
     internal class Actions
     {
+        /* regular visit *
+         * the one used by non-scheduled NPCs */
         internal static void AddToFarmHouse(NPC visitor, FarmHouse farmHouse)
         {
             try
@@ -57,6 +59,11 @@ namespace FarmVisitors
 
                 position.Y--;
                 npcv.controller = new PathFindController(npcv, farmHouse, position, 0);
+
+                if(ModEntry.RelativeComments == true && Game1.MasterPlayer.isMarried())
+                {
+                    InLawActions(visitor);
+                }
             }
             catch(Exception ex)
             {
@@ -64,6 +71,7 @@ namespace FarmVisitors
             }
 
         }
+
         internal static void ReturnToNormal(NPC c, int currentTime)
         {
             try
@@ -108,7 +116,6 @@ namespace FarmVisitors
                 c.FacingDirection = ModEntry.VisitorData.Facing;
                 c.facingDirection.Value = ModEntry.VisitorData.Facing;
                 c.faceDirection(ModEntry.VisitorData.Facing);
-                c.reloadSprite();
 
                 if (c.CurrentDialogue.Any() || c.CurrentDialogue is not null)
                 {
@@ -145,7 +152,7 @@ namespace FarmVisitors
                 npcv.Sprite.CurrentFrame = 0;
                 npcv.faceDirection(0);
 
-                if(npcv.endOfRouteMessage is not null)
+                if(npcv.endOfRouteMessage.Value is not null)
                 {
                     npcv.endOfRouteMessage.Value.Remove(0);
                     npcv.endOfRouteMessage.Value = null;
@@ -206,9 +213,42 @@ namespace FarmVisitors
                 }
             }
         }
+        
+        /* extra *
+         * if in-law, will have dialogue about it */
+        private static void InLawActions(NPC visitor)
+        {
+            if (Moddeds.IsVanillaInLaw(visitor.Name))
+            {
+                if (Vanillas.InLawOfSpouse(visitor.Name) is true)
+                {
+                    visitor.setNewDialogue(Vanillas.GetInLawDialogue(visitor.Name));
 
+                    if (Game1.MasterPlayer.getChildrenCount() > 0)
+                    {
+                        visitor.setNewDialogue(Vanillas.AskAboutKids(Game1.MasterPlayer));
+                    }
+                }
+            }
+            else
+            {
+                var nameof = Moddeds.GetRelativeName(visitor.Name);
+                if (nameof is not null)
+                {
+                    //use the prev-checked name to format string
+                    string formatted = string.Format(Moddeds.GetDialogueRaw(), nameof);
+                    visitor.setNewDialogue(formatted);
 
-        //customized visits
+                    if (Game1.MasterPlayer.getChildrenCount() > 0)
+                    {
+                        visitor.setNewDialogue(Vanillas.AskAboutKids(Game1.MasterPlayer));
+                    }
+                }
+            }
+        }
+
+        /* customized visits *
+         * ones set by user via ContentPatcher*/
         internal static void AddCustom(NPC c, FarmHouse farmHouse, ScheduleData data)
         {
             try
@@ -324,7 +364,7 @@ namespace FarmVisitors
                 }
             }
         }
-        
+
         //turn list to string
         internal static string TurnToString(List<string> list)
         {

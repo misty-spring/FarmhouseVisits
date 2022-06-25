@@ -1,4 +1,4 @@
-using StardewValley;
+﻿using StardewValley;
 using StardewValley.Locations;
 using StardewValley.Objects;
 using System.Collections.Generic;
@@ -9,38 +9,17 @@ namespace FarmVisitors
     {
         internal static bool IsMarriedToPlayer(NPC c)
         {
-            /* npc replacers will cause conflicts (friendshipdata checks internal but it seems to fail somehow)
-             * using c.displayName as fix
-            */
             if (c is null)
             {
                 return false;
             }
-            /*else if (Game1.IsMultiplayer)
-            {
-                foreach(Farmer eachFarmer in Game1.getAllFarmers())
-                {
-                    if(!eachFarmer.friendshipData.ContainsKey(c.Name))
-                    {
-                        ModEntry.ModMonitor.Log($"{c.Name} is not in the dictionary.");
-                        return true;
-                    }
-                    //used to have "eachFarmer.spouse != null" inside the if
-                    if (eachFarmer.IsMainPlayer && eachFarmer.friendshipData[c.Name].IsMarried())
-                    {
-                        ModEntry.ModMonitor.Log($"{c.Name} is married!");
-                        return true;
-                    }
-                }
-                return false;
-            }*/
             else
             {         
                 Farmer player = Game1.MasterPlayer;
                 if (!player.friendshipData.ContainsKey(c.Name))
                 {
                     ModEntry.ModMonitor.Log($"{c.Name} is not in the dictionary.");
-                    return true;
+                    return false;
                 }
                 if (player.friendshipData[c.Name].IsMarried())
                 {
@@ -54,9 +33,35 @@ namespace FarmVisitors
             }
         }
 
+        internal static bool IsDivorced(NPC c)
+        {
+            if (c is null)
+            {
+                return false;
+            }
+            else
+            {         
+                Farmer player = Game1.MasterPlayer;
+                if (!player.friendshipData.ContainsKey(c.Name))
+                {
+                    ModEntry.ModMonitor.Log($"{c.Name} is not in the dictionary.");
+                    return false;
+                }
+                if (player.friendshipData[c.Name].IsDivorced())
+                {
+                    ModEntry.ModMonitor.Log($"{c.Name} is divorced!");
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
         internal static bool IsVisitor(string c)
         {
-            if (c.Equals(ModEntry.ModVisitor))
+            if (c.Equals(ModEntry.VisitorName))
             {
                 return true;
             }
@@ -257,24 +262,24 @@ namespace FarmVisitors
         internal static string GetRandomFurniture()
         {
             var list = ModEntry.FurnitureList;
-            int amount = list.Count;
 
             //if there's no furniture, return null
-            if(amount is 0)
+            if (list is null)
             {
                 return null;
             }
 
             //choose random index and return itsdisplayname
+            int amount = list.Count;
             var r = Game1.random.Next(0, (amount + 1));
-            return list[r].DisplayName;
+            return list[r];
         }
-        internal static List<Furniture> UpdateFurniture(FarmHouse farmHouse)
+        internal static List<string> UpdateFurniture(FarmHouse farmHouse)
         {
-            List<Furniture> templist = new();
+            List<string> templist = new();
             foreach (Furniture f in farmHouse.furniture)
             {
-                templist.Add(f);
+                templist.Add(f.DisplayName);
             }
             return templist;
         }
