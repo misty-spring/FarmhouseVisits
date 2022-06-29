@@ -6,8 +6,8 @@
 - No habrán visitas en días festivos ni días de clínica
 - Si un NPC se duerme en tu casa, se retirarán de inmediato.
 - Agregados comentarios de familiares
-- - Esto incluye preguntar por tu pareja e hijes.
-- - También es configurable (compatible con mods y reemplazadores de NPC).
+  - Esto incluye preguntar por tu pareja e hijes.
+  - También es configurable (compatible con mods y reemplazadores de NPC).
 - Agregada sección de desarrollador en config.
 - Traducción a turco (créditos a BURAKMESE!)
 - Traducción a ruso (créditos a crybaby00000!)
