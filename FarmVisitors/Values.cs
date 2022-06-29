@@ -18,12 +18,12 @@ namespace FarmVisitors
                 Farmer player = Game1.MasterPlayer;
                 if (!player.friendshipData.ContainsKey(c.Name))
                 {
-                    ModEntry.ModMonitor.Log($"{c.Name} is not in the dictionary.");
+                    ModEntry.Mon.Log($"{c.Name} is not in the dictionary.");
                     return false;
                 }
                 if (player.friendshipData[c.Name].IsMarried())
                 {
-                    ModEntry.ModMonitor.Log($"{c.Name} is married!");
+                    ModEntry.Mon.Log($"{c.Name} is married!");
                     return true;
                 }
                 else
@@ -44,12 +44,12 @@ namespace FarmVisitors
                 Farmer player = Game1.MasterPlayer;
                 if (!player.friendshipData.ContainsKey(c.Name))
                 {
-                    ModEntry.ModMonitor.Log($"{c.Name} is not in the dictionary.");
+                    ModEntry.Mon.Log($"{c.Name} is not in the dictionary.");
                     return false;
                 }
                 if (player.friendshipData[c.Name].IsDivorced())
                 {
-                    ModEntry.ModMonitor.Log($"{c.Name} is divorced!");
+                    ModEntry.Mon.Log($"{c.Name} is divorced!");
                     return true;
                 }
                 else
@@ -79,26 +79,26 @@ namespace FarmVisitors
             {
                 if(npcv.SocialAnxiety.Equals(0))
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCIntroduce.Outgoing{r}");
+                    return ModEntry.Help.Translation.Get($"NPCIntroduce.Outgoing{r}");
                 }
                 else
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCIntroduce.Shy{r}");
+                    return ModEntry.Help.Translation.Get($"NPCIntroduce.Shy{r}");
                 }
             }
             else
             {
                 if (npcv.Manners.Equals(1)) //polite
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCIntroduce.Polite{r}");
+                    return ModEntry.Help.Translation.Get($"NPCIntroduce.Polite{r}");
                 }
                 else if (npcv.Manners.Equals(2)) //rude
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCIntroduce.Rude{r}");
+                    return ModEntry.Help.Translation.Get($"NPCIntroduce.Rude{r}");
                 }
                 else //neutral
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCIntroduce.Neutral{r}");
+                    return ModEntry.Help.Translation.Get($"NPCIntroduce.Neutral{r}");
                 }
             }
         }
@@ -111,33 +111,38 @@ namespace FarmVisitors
             {
                 if(c.SocialAnxiety.Equals(0))
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCGreet.Outgoing{r}");
+                    return ModEntry.Help.Translation.Get($"NPCGreet.Outgoing{r}");
                 }
                 else
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCGreet.Shy{r}");
+                    return ModEntry.Help.Translation.Get($"NPCGreet.Shy{r}");
                 }
             }
             else
             {
                 if (c.Manners.Equals(1)) //polite
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCGreet.Polite{r}");
+                    return ModEntry.Help.Translation.Get($"NPCGreet.Polite{r}");
                 }
                 else if (c.Manners.Equals(2)) //rude
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCGreet.Rude{r}");
+                    return ModEntry.Help.Translation.Get($"NPCGreet.Rude{r}");
                 }
                 else //neutral
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCGreet.Neutral{r}");
+                    return ModEntry.Help.Translation.Get($"NPCGreet.Neutral{r}");
                 }
             }
         }
 
         internal static string GetNPCGone()
         {
-            return ModEntry.ModHelper.Translation.Get("NPCGoneWhileOutside");
+            return ModEntry.Help.Translation.Get("NPCGoneWhileOutside");
+        }
+
+        internal static string NPCGone_Cellar()
+        {
+            return ModEntry.Help.Translation.Get("NPCGone_Cellar");
         }
 
         internal static string GetRetireDialogue(NPC c)
@@ -147,26 +152,26 @@ namespace FarmVisitors
             {
                 if(c.SocialAnxiety.Equals(0))
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCRetiring.Outgoing");
+                    return ModEntry.Help.Translation.Get($"NPCRetiring.Outgoing");
                 }
                 else
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCRetiring.Shy");
+                    return ModEntry.Help.Translation.Get($"NPCRetiring.Shy");
                 }
             }
             else
             {
                 if (c.Manners.Equals(1)) //polite
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCRetiring.Polite");
+                    return ModEntry.Help.Translation.Get($"NPCRetiring.Polite");
                 }
                 else if (c.Manners.Equals(2)) //rude
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCRetiring.Rude");
+                    return ModEntry.Help.Translation.Get($"NPCRetiring.Rude");
                 }
                 else //neutral
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCRetiring.Neutral");
+                    return ModEntry.Help.Translation.Get($"NPCRetiring.Neutral");
                 }
             }
         }
@@ -179,26 +184,26 @@ namespace FarmVisitors
             {
                 if(c.SocialAnxiety.Equals(0))
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCWalkIn.Outgoing{r}");
+                    return ModEntry.Help.Translation.Get($"NPCWalkIn.Outgoing{r}");
                 }
                 else
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCWalkIn.Shy{r}");
+                    return ModEntry.Help.Translation.Get($"NPCWalkIn.Shy{r}");
                 }
             }
             else
             {
                 if (c.Manners.Equals(1)) //polite
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCWalkIn.Polite{r}");
+                    return ModEntry.Help.Translation.Get($"NPCWalkIn.Polite{r}");
                 }
                 else if (c.Manners.Equals(2)) //rude
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCWalkIn.Rude{r}");
+                    return ModEntry.Help.Translation.Get($"NPCWalkIn.Rude{r}");
                 }
                 else //neutral
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCWalkIn.Neutral{r}");
+                    return ModEntry.Help.Translation.Get($"NPCWalkIn.Neutral{r}");
                 }
             }
         }
@@ -236,26 +241,26 @@ namespace FarmVisitors
             {
                 if(c.SocialAnxiety.Equals(0))
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCFurniture.Outgoing{r}");
+                    return ModEntry.Help.Translation.Get($"NPCFurniture.Outgoing{r}");
                 }
                 else
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCFurniture.Shy{r}");
+                    return ModEntry.Help.Translation.Get($"NPCFurniture.Shy{r}");
                 }
             }
             else
             {
                 if (c.Manners.Equals(1)) //polite
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCFurniture.Polite{r}");
+                    return ModEntry.Help.Translation.Get($"NPCFurniture.Polite{r}");
                 }
                 else if (c.Manners.Equals(2)) //rude
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCFurniture.Rude{r}");
+                    return ModEntry.Help.Translation.Get($"NPCFurniture.Rude{r}");
                 }
                 else //neutral
                 {
-                    return ModEntry.ModHelper.Translation.Get($"NPCFurniture.Neutral{r}");
+                    return ModEntry.Help.Translation.Get($"NPCFurniture.Neutral{r}");
                 }
             }
         }
@@ -279,7 +284,8 @@ namespace FarmVisitors
             List<string> templist = new();
             foreach (Furniture f in farmHouse.furniture)
             {
-                templist.Add(f.DisplayName);
+                //templist.Add(f.DisplayName);
+                templist.Add($"{f.DisplayName.ToLower()}");
             }
             return templist;
         }

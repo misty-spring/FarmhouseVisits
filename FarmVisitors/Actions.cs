@@ -19,7 +19,7 @@ namespace FarmVisitors
             {
                 if (!Values.IsVisitor(visitor.Name))
                 {
-                    ModEntry.ModMonitor.Log($"{visitor.displayName} is not a visitor!");
+                    ModEntry.Mon.Log($"{visitor.displayName} is not a visitor!");
                     return;
                 }
 
@@ -31,6 +31,8 @@ namespace FarmVisitors
                 {
                     RemoveAnimation(npcv);
                 }
+                /* not needed anymore since we exclude hospital days. however i like it and i restore the dialogues afterwards so it's fine*/
+
                 if(npcv.CurrentDialogue.Any())
                 {
                     npcv.CurrentDialogue.Clear();
@@ -48,6 +50,13 @@ namespace FarmVisitors
 
                 npcv.showTextAboveHead(string.Format(Values.GetTextOverHead(npcv),Game1.MasterPlayer.Name));
 
+                //set before greeting because "Push" leaves dialogues at the top
+                if (Game1.MasterPlayer.isMarried())
+                {
+                    if (ModEntry.InLawDialogue is not "None")
+                        InLawActions(visitor);
+                }
+
                 npcv.CurrentDialogue.Push(new Dialogue(string.Format(Values.StringByPersonality(npcv), Values.GetSeasonalGifts()), npcv));
                 //add but different for attempt
                 npcv.setNewDialogue(string.Format(Values.StringByPersonality(npcv), Values.GetSeasonalGifts()), true, false);
@@ -59,30 +68,60 @@ namespace FarmVisitors
 
                 position.Y--;
                 npcv.controller = new PathFindController(npcv, farmHouse, position, 0);
-
-                if(ModEntry.RelativeComments == true && Game1.MasterPlayer.isMarried())
-                {
-                    InLawActions(visitor);
-                }
             }
             catch(Exception ex)
             {
-                ModEntry.ModMonitor.Log($"Error while adding to farmhouse: {ex}", LogLevel.Error);
+                ModEntry.Mon.Log($"Error while adding to farmhouse: {ex}", LogLevel.Error);
             }
 
         }
 
         internal static void ReturnToNormal(NPC c, int currentTime)
         {
+            //special NPCs (locked by conditions in game)
+            if(c.Name.Equals("Dwarf") || c.Name.Equals("Kent") || c.Name.Equals("Leo"))
+            {
+                try
+                {
+                    c.CurrentDialogue?.Clear();
+                    c.Dialogue?.Clear();
+
+                    if (c.Name.Equals("Dwarf"))
+                    {
+                        var mine = Game1.getLocationFromName("Mine");
+                        Game1.warpCharacter(c, mine, new Vector2(43, 6));
+                    }
+                    if (c.Name.Equals("Kent"))
+                    {
+                        var samhouse = Game1.getLocationFromName("SamHouse");
+                        Game1.warpCharacter(c, samhouse, new Vector2(22, 5));
+                    }    
+                    if (c.Name.Equals("Leo"))
+                    {
+                        var islandhut = Game1.getLocationFromName("IslandHut");
+                        Game1.warpCharacter(c, islandhut, new Vector2(5, 6));
+                    }
+
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    ModEntry.Mon.Log($"Error while returning special NPC ({c.Name}): {ex}", LogLevel.Error);
+                }
+            }
+
+            //everyone else
             try
             {
+                var timeOfDay = Game1.timeOfDay;
+
                 c.Halt();
                 c.controller = null;
 
                 c.ignoreScheduleToday = false;
                 c.followSchedule = true;
 
-                if (c.DefaultMap.Equals(ModEntry.VisitorData.CurrentLocation))
+                if (c.DefaultMap.Equals(ModEntry.VisitorData?.CurrentLocation))
                 {
                     Point PositionFixed = new((int)(c.DefaultPosition.X / 64), (int)(c.DefaultPosition.Y / 64));
 
@@ -90,7 +129,7 @@ namespace FarmVisitors
                 }
                 else
                 {
-                    Game1.warpCharacter(c, ModEntry.VisitorData.CurrentLocation, ModEntry.VisitorData.Position);
+                    Game1.warpCharacter(c, ModEntry.VisitorData?.CurrentLocation, ModEntry.VisitorData.Position);
                 }
 
                 c.Sprite = ModEntry.VisitorData.Sprite;
@@ -117,24 +156,41 @@ namespace FarmVisitors
                 c.facingDirection.Value = ModEntry.VisitorData.Facing;
                 c.faceDirection(ModEntry.VisitorData.Facing);
 
-                if (c.CurrentDialogue.Any() || c.CurrentDialogue is not null)
+
+                var currentLocation = c.currentLocation;
+
+                if (c.CurrentDialogue.Any() || c.CurrentDialogue is not null || c.Dialogue is not null)
                 {
                     c.CurrentDialogue.Clear();
                     c.resetCurrentDialogue();
 
-                    c.update(Game1.currentGameTime, c.currentLocation);
+                    c.Dialogue.Clear();
 
-                    int heartlvl = Game1.MasterPlayer.friendshipData[c.displayName].Points / 250;
-                    c.checkForNewCurrentDialogue(heartlvl);
+                    c.update(Game1.currentGameTime, currentLocation);
 
-                    c.CurrentDialogue = ModEntry.VisitorData.DialoguePreVisit;
+                    /*apparently this causes problems for international players (something about key not found).
+                     * int heartlvl = Game1.MasterPlayer.friendshipData[c.displayName].Points / 250;
+                     * fix: take it out since im not using this anyway lol 
+                     * c.checkForNewCurrentDialogue(heartlvl);*/
+
+                    //restores (pre-visit) current dialogue
+                    c.CurrentDialogue = ModEntry.VisitorData.CurrentPreVisit;
+
+                    //restores all pre visit dialogues
+                    foreach (KeyValuePair<string,string> pair in ModEntry.VisitorData.AllPreVisit)
+                    {
+                        c.Dialogue.Add(pair.Key, pair.Value);
+                    }
+
+                    //if above doesnt work, try using the dialogues with CurrentDialogue.Push
                 }
 
-                c.performTenMinuteUpdate(Game1.timeOfDay, c.currentLocation);
+                c.performTenMinuteUpdate(timeOfDay, currentLocation);
+                c.update(Game1.currentGameTime, currentLocation);
             }
             catch (Exception ex)
             {
-                ModEntry.ModMonitor.Log($"Error while returning NPC: {ex}", LogLevel.Error);
+                ModEntry.Mon.Log($"Error while returning NPC: {ex}", LogLevel.Error);
             }
         }
 
@@ -142,7 +198,7 @@ namespace FarmVisitors
         {
             try
             {
-                ModEntry.ModMonitor.Log($"Stopping animation for {npcv.displayName} and resizing...");
+                ModEntry.Mon.Log($"Stopping animation for {npcv.displayName} and resizing...");
 
                 npcv.Sprite.StopAnimation();
                 npcv.Sprite.SpriteWidth = 16;
@@ -160,7 +216,7 @@ namespace FarmVisitors
             }
             catch (Exception ex)
             {
-                ModEntry.ModMonitor.Log($"Error while stopping {npcv.displayName} animation: {ex}", LogLevel.Error);
+                ModEntry.Mon.Log($"Error while stopping {npcv.displayName} animation: {ex}", LogLevel.Error);
             }
         }
 
@@ -185,7 +241,7 @@ namespace FarmVisitors
                 }
                 catch (Exception ex)
                 {
-                    ModEntry.ModMonitor.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
+                    ModEntry.Mon.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
                 }
                 finally
                 {
@@ -205,11 +261,18 @@ namespace FarmVisitors
                     }
                     ReturnToNormal(c, currentTime);
 
-                    Game1.drawObjectDialogue(string.Format(Values.GetNPCGone(), c.displayName));
+                    if(Game1.currentLocation.Name.StartsWith("Cellar"))
+                    {
+                        Game1.drawObjectDialogue(string.Format(Values.NPCGone_Cellar(), c.displayName));
+                    }
+                    else
+                    {
+                        Game1.drawObjectDialogue(string.Format(Values.GetNPCGone(), c.displayName));
+                    }
                 }
                 catch (Exception ex)
                 {
-                    ModEntry.ModMonitor.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
+                    ModEntry.Mon.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
                 }
             }
         }
@@ -218,32 +281,32 @@ namespace FarmVisitors
          * if in-law, will have dialogue about it */
         private static void InLawActions(NPC visitor)
         {
-            if (Moddeds.IsVanillaInLaw(visitor.Name))
-            {
-                if (Vanillas.InLawOfSpouse(visitor.Name) is true)
-                {
-                    visitor.setNewDialogue(Vanillas.GetInLawDialogue(visitor.Name));
+            bool addedAlready = false;
+            var name = visitor.Name;
 
-                    if (Game1.MasterPlayer.getChildrenCount() > 0)
-                    {
-                        visitor.setNewDialogue(Vanillas.AskAboutKids(Game1.MasterPlayer));
-                    }
+            if (!ModEntry.ReplacerOn && Moddeds.IsVanillaInLaw(name))
+            {
+                if (Vanillas.InLawOfSpouse(name) is true)
+                {
+                    visitor.setNewDialogue(Vanillas.GetInLawDialogue(name), true, false);
+                    addedAlready = true;
                 }
             }
-            else
-            {
-                var nameof = Moddeds.GetRelativeName(visitor.Name);
-                if (nameof is not null)
-                {
-                    //use the prev-checked name to format string
-                    string formatted = string.Format(Moddeds.GetDialogueRaw(), nameof);
-                    visitor.setNewDialogue(formatted);
 
-                    if (Game1.MasterPlayer.getChildrenCount() > 0)
-                    {
-                        visitor.setNewDialogue(Vanillas.AskAboutKids(Game1.MasterPlayer));
-                    }
+            if(ModEntry.InLawDialogue is "VanillaAndMod")
+            {
+                var spouse = Moddeds.GetRelativeName(name);
+                if (spouse is not null && !addedAlready)
+                {
+                    string formatted = string.Format(Moddeds.GetDialogueRaw(), spouse);
+                    visitor.setNewDialogue(formatted, true, false);
+                    addedAlready = true;
                 }
+            }
+
+            if (Game1.MasterPlayer.getChildrenCount() > 0 && addedAlready)
+            {
+                visitor.setNewDialogue(Vanillas.AskAboutKids(Game1.MasterPlayer), true, false);
             }
         }
 
@@ -255,7 +318,7 @@ namespace FarmVisitors
             {
                 if (!Values.IsVisitor(c.Name))
                 {
-                    ModEntry.ModMonitor.Log($"{c.displayName} is not a visitor!");
+                    ModEntry.Mon.Log($"{c.displayName} is not a visitor!");
                     return;
                 }
 
@@ -316,7 +379,7 @@ namespace FarmVisitors
             }
             catch(Exception ex)
             {
-                ModEntry.ModMonitor.Log($"Error while adding to farmhouse: {ex}", LogLevel.Error);
+                ModEntry.Mon.Log($"Error while adding to farmhouse: {ex}", LogLevel.Error);
             }
 
         }
@@ -335,7 +398,7 @@ namespace FarmVisitors
                 }
                 catch (Exception ex)
                 {
-                    ModEntry.ModMonitor.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
+                    ModEntry.Mon.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
                 }
                 finally
                 {
@@ -360,7 +423,7 @@ namespace FarmVisitors
                 }
                 catch (Exception ex)
                 {
-                    ModEntry.ModMonitor.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
+                    ModEntry.Mon.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
                 }
             }
         }

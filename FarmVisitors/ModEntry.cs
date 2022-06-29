@@ -6,7 +6,6 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Locations;
-using StardewValley.Objects;
 
 namespace FarmVisitors
 {
@@ -16,27 +15,39 @@ namespace FarmVisitors
         {
             helper.Events.GameLoop.GameLaunched += this.GameLaunched;
             helper.Events.GameLoop.SaveLoaded += this.SaveLoaded;
+
+            helper.Events.GameLoop.DayStarted += this.DayStarted;
             helper.Events.GameLoop.TimeChanged += this.OnTimeChange;
             helper.Events.GameLoop.DayEnding += this.DayEnding;
+
             helper.Events.GameLoop.ReturnedToTitle += this.TitleReturn;
             helper.Events.Content.AssetRequested += Extras.AssetRequest;
 
             this.Config = this.Helper.ReadConfig<ModConfig>();
 
-            ModHelper = this.Helper;
-            ModMonitor = this.Monitor;
-            RelativeComments = Config.InLawComments;
+            Help = this.Helper;
+            Mon = this.Monitor;
+            InLawDialogue = Config.InLawComments;
+            ReplacerOn = Config.ReplacerCompat;
 
             if (Config.Debug is true)
             {
-                helper.ConsoleCommands.Add("force_visit", helper.Translation.Get("CLI.force_visit"), this.ForceVisit);
-                helper.ConsoleCommands.Add("print_all", helper.Translation.Get("CLI.print_all"), this.PrintAll);
-                helper.ConsoleCommands.Add("vi_reload", helper.Translation.Get("CLI.reload"), this.Reload);
+                helper.ConsoleCommands.Add("force_visit", "Force a visitor to show up.", this.ForceVisit);
+                helper.ConsoleCommands.Add("print_all", "Print all values being used.", this.PrintAll);
+                helper.ConsoleCommands.Add("vi_reload", "Reload visitor info.", this.Reload);
+                helper.ConsoleCommands.Add("print_inlaws", "Print all in-laws.", this.PrintInLaws);
             }
         }
 
         private void GameLaunched(object sender, GameLaunchedEventArgs e)
         {
+            var AllowedStringVals = new string[3]
+            {
+                "VanillaOnly",
+                "VanillaAndMod",
+                "None"
+            };
+
             //check values and clear them if needed
             ClearValues();
 
@@ -72,6 +83,25 @@ namespace FarmVisitors
                 max: 24,
                 interval: 1
             );
+            configMenu.SetTitleScreenOnlyForNextOptions(
+                mod: this.ModManifest,
+                titleScreenOnly: true
+            );
+            configMenu.AddNumberOption(
+                mod: this.ModManifest,
+                name: () => this.Helper.Translation.Get("config.VisitDuration.name"),
+                tooltip: () => this.Helper.Translation.Get("config.VisitDuration.description"),
+                getValue: () => this.Config.Duration,
+                setValue: value => this.Config.Duration = value,
+                min: 1,
+                max: 20,
+                interval: 1
+            );
+            configMenu.SetTitleScreenOnlyForNextOptions(
+                mod: this.ModManifest,
+                titleScreenOnly: false
+            );
+            //extra customization
             configMenu.AddPageLink(
                 mod: this.ModManifest,
                 pageId: "Extras",
@@ -82,6 +112,16 @@ namespace FarmVisitors
                 mod: this.ModManifest,
                 pageId: "Extras"
             );
+
+            configMenu.AddSectionTitle(
+                mod: this.ModManifest,
+                text: Extras.VisitConfiguration,
+                tooltip: null);
+
+            configMenu.SetTitleScreenOnlyForNextOptions(
+                mod: this.ModManifest,
+                titleScreenOnly: true
+            );
             configMenu.AddTextOption(
                 mod: this.ModManifest,
                 getValue: () => this.Config.Blacklist,
@@ -89,6 +129,10 @@ namespace FarmVisitors
                 name: Extras.BlacklistTL,
                 tooltip: Extras.BlacklistTTP
             );
+            configMenu.SetTitleScreenOnlyForNextOptions(
+                mod: this.ModManifest,
+                titleScreenOnly: false
+                );
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
                 name: () => this.Helper.Translation.Get("config.StartingHours.name"),
@@ -109,23 +153,29 @@ namespace FarmVisitors
                 max: 2400,
                 interval: 100
             );
-            configMenu.AddNumberOption(
+            configMenu.AddTextOption(
                 mod: this.ModManifest,
-                name: () => this.Helper.Translation.Get("config.VisitDuration.name"),
-                tooltip: () => this.Helper.Translation.Get("config.VisitDuration.description"),
-                getValue: () => this.Config.Duration,
-                setValue: value => this.Config.Duration = value,
-                min: 1,
-                max: 20,
-                interval: 1
+                name: () => this.Helper.Translation.Get("config.InLawComments.name"),
+                tooltip: () => this.Helper.Translation.Get("config.InLawComments.description"),
+                getValue: () => this.Config.InLawComments,
+                setValue: value => this.Config.InLawComments = value,
+                allowedValues: AllowedStringVals,
+                formatAllowedValue: value => this.Helper.Translation.Get($"config.InLawComments.values.{value}")
             );
             configMenu.AddBoolOption(
-                    mod: this.ModManifest,
-                    name: () => this.Helper.Translation.Get("config.InLawComments.name"),
-                    tooltip: () => this.Helper.Translation.Get("config.InLawComments.description"),
-                    getValue: () => this.Config.InLawComments,
-                    setValue: value => this.Config.InLawComments = value
-                );
+                mod: this.ModManifest,
+                name: () => this.Helper.Translation.Get("config.ReplacerCompat.name"),
+                tooltip: () => this.Helper.Translation.Get("config.ReplacerCompat.description"),
+                getValue: () => this.Config.ReplacerCompat,
+                setValue: value => this.Config.ReplacerCompat = value
+            );
+
+            //developer config
+            configMenu.AddSectionTitle(
+                mod: this.ModManifest,
+                text: Extras.DebugTL,
+                tooltip: null
+            );
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
                 name: () => this.Helper.Translation.Get("config.Verbose.name"),
@@ -133,14 +183,20 @@ namespace FarmVisitors
                 getValue: () => this.Config.Verbose,
                 setValue: value => this.Config.Verbose = value
             );
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => this.Helper.Translation.Get("config.Debug.name"),
+                tooltip: () => this.Helper.Translation.Get("config.Debug.Explanation"),
+                getValue: () => this.Config.Debug,
+                setValue: value => this.Config.Debug = value
+            );
         }
         private void SaveLoaded(object sender, SaveLoadedEventArgs e)
         {
             CleanTempData();
             GetAllVisitors();
 
-            //TEST: get inlaw/relationships of friended npcs
-            if (RelativeComments == true)
+            if (Config.InLawComments is "VanillaAndMod")
             {
                 var tempdict = Game1.content.Load<Dictionary<string, string>>("Data\\NPCDispositions");
                 foreach (string name in NameAndLevel.Keys)
@@ -153,22 +209,28 @@ namespace FarmVisitors
                 }
             }
         }
+        private void DayStarted(object sender, DayStartedEventArgs e)
+        {
+            isFestivalToday = Utility.isFestivalDay(Game1.dayOfMonth, Game1.currentSeason);
+        }
         private void OnTimeChange(object sender, TimeChangedEventArgs e)
         {
-            if (IsConfigValid == false || RepeatedByLV is null)
+            if (isFestivalToday == true || IsConfigValid == false || RepeatedByLV is null)
             {
                 return;
             }
 
-            if (e.NewTime > Config.StartingHours && e.NewTime < Config.EndingHours)
+            if (e.NewTime > Config.StartingHours && e.NewTime < Config.EndingHours && CounterToday < Config.MaxVisitsPerDay)
             {
-                if (HasAnyVisitors is false && CounterToday < Config.MaxVisitsPerDay && SchedulesParsed is not null) //custom
+                if (HasAnyVisitors == false && SchedulesParsed is not null) //custom
                 {
+
                     foreach (KeyValuePair<string, ScheduleData> pair in SchedulesParsed)
                     {
-                        if (e.NewTime.Equals(pair.Value.From))
+                        var visitingIsland = Game1.IsVisitingIslandToday(VisitorName);
+                        NPC visit = Game1.getCharacterFromName(VisitorName);
+                        if (e.NewTime.Equals(pair.Value.From) && visitingIsland == false)
                         {
-                            NPC visit = Game1.getCharacterFromName(VisitorName);
                             VisitorData = new TempNPC(visit);
 
                             currentCustom.Add(pair.Key, pair.Value);
@@ -193,119 +255,33 @@ namespace FarmVisitors
                         }
                     }
                 } //custom
-
-                if (HasAnyVisitors is false && CounterToday < Config.MaxVisitsPerDay) //random
+                if (HasAnyVisitors == false) //random
                 {
                     if (Random.Next(1, 101) <= Config.CustomChance && Game1.currentLocation == farmHouseAsLocation)
                     {
-                        // choose a random character from a list
                         ChooseRandom();
                     }
                 } //random
             }
 
-            if (HasAnyVisitors == true && CustomVisiting == false)
+            if (HasAnyVisitors == true)
             {
                 NPC c = Game1.getCharacterFromName(VisitorName);
-                if (Values.IsVisitor(c.Name))
+                if (DurationSoFar >= MaxTimeStay || (CustomVisiting && e.NewTime.Equals(currentCustom[VisitorName].To)))
                 {
-                    if (DurationSoFar >= MaxTimeStay)
+                    this.Monitor.Log($"{c.Name} is retiring for the day.");
+
+                    //if custom AND has custom dialogue: exit with custom. else normal
+                    if (CustomVisiting == true)
                     {
-                        if (Config.Verbose == true)
-                        {
-                            this.Monitor.Log($"{c.Name} is retiring for the day.");
-                        }
-                        Actions.Retire(c, e.NewTime, farmHouse);
-                        HasAnyVisitors = false;
-                        CounterToday++;
-                        TodaysVisitors.Add(VisitorName);
-                        DurationSoFar = 0;
-                        ControllerTime = 0;
-                        VisitorName = null;
-
-                        VisitorData = null;
-
-                        if (Config.Verbose == true)
-                        {
-                            this.Monitor.Log($"HasAnyVisitors = false, CounterToday = {CounterToday}, TodaysVisitors= {Actions.TurnToString(TodaysVisitors)}, DurationSoFar = {DurationSoFar}, ControllerTime = {ControllerTime}, VisitorName = {VisitorName}");
-                        }
-                        return;
-                    }
-                    else
-                    {
-                        if (Config.Verbose == true)
-                        {
-                            this.Monitor.Log($"{c.Name} will move around the house now.");
-                        }
-
-                        if (c.controller is not null && ControllerTime >= 1)
-                        {
-                            c.Halt();
-                            c.controller = null;
-                            ControllerTime = 0;
-                            if (Config.Verbose == true)
-                            {
-                                this.Monitor.Log($"ControllerTime = {ControllerTime}");
-                            }
-                        }
-                        else if (e.NewTime > TimeOfArrival)
-                        {
-                            c.controller = new PathFindController(c, farmHouse, farmHouse.getRandomOpenPointInHouse(Game1.random), Random.Next(0, 4));
-
-                            if (Random.Next(0, 11) <= 5 && FurnitureList is not null)
-                            {
-                                c.setNewDialogue(string.Format(Values.TalkAboutFurniture(c), Values.GetRandomFurniture()), true, false);
-                                if (Config.Verbose == true)
-                                {
-                                    this.Monitor.Log($"Adding dialogue for {c.Name}...");
-                                }
-                            }
-
-                            ControllerTime++;
-                            if (Config.Verbose == true)
-                            {
-                                this.Monitor.Log($"ControllerTime = {ControllerTime}");
-                            }
-                        }
+                        var exitd = currentCustom[VisitorName].ExitDialogue;
+                        if (!string.IsNullOrWhiteSpace(exitd))
+                            Actions.RetireCustom(c, e.NewTime, farmHouse, exitd);
                         else
-                        {
-                            if (Config.Verbose == true)
-                            {
-                                this.Monitor.Log($"Time of arrival equals current time. NPC won't move around");
-                            }
-                        }
+                            Actions.Retire(c, e.NewTime, farmHouse);
 
-                        DurationSoFar++;
-                        if (Config.Verbose == true)
-                        {
-                            this.Monitor.Log($"DurationSoFar = {DurationSoFar} ({DurationSoFar * 10} minutes).");
-                        }
-                    }
-                }
-                else
-                {
-                    if (Config.Verbose == true)
-                    {
-                        this.Monitor.Log($"{c.Name} is not marked as visit.");
-                    }
-                }
-            }
-
-            if (HasAnyVisitors == true && CustomVisiting == true)
-            {
-                NPC c = Game1.getCharacterFromName(VisitorName);
-                if (DurationSoFar >= MaxTimeStay || e.NewTime.Equals(currentCustom[VisitorName].To))
-                {
-                    if (Config.Verbose == true)
-                    {
-                        this.Monitor.Log($"{c.Name} is retiring for the day.");
-                    }
-
-                    //if has custom dialogue: exit with custom. else normal
-                    var exitd = currentCustom[VisitorName].ExitDialogue;
-                    if (!string.IsNullOrWhiteSpace(exitd))
-                    {
-                        Actions.RetireCustom(c, e.NewTime, farmHouse, exitd);
+                        CustomVisiting = false;
+                        currentCustom.Clear();
                     }
                     else
                     {
@@ -313,12 +289,11 @@ namespace FarmVisitors
                     }
 
                     HasAnyVisitors = false;
+                    CounterToday++;
                     TodaysVisitors.Add(VisitorName);
                     DurationSoFar = 0;
                     ControllerTime = 0;
                     VisitorName = null;
-                    CustomVisiting = false;
-                    currentCustom.Clear();
 
                     VisitorData = null;
 
@@ -335,7 +310,11 @@ namespace FarmVisitors
                         this.Monitor.Log($"{c.Name} will move around the house now.");
                     }
 
-                    if (c.controller is not null && ControllerTime >= 1)
+                    if(e.NewTime.Equals(TimeOfArrival))
+                    {
+                        this.Monitor.Log($"Time of arrival equals current time. NPC won't move around");
+                    }
+                    else if (ControllerTime >= 1)
                     {
                         c.Halt();
                         c.controller = null;
@@ -345,11 +324,14 @@ namespace FarmVisitors
                             this.Monitor.Log($"ControllerTime = {ControllerTime}");
                         }
                     }
-                    else if (e.NewTime > TimeOfArrival)
+                    else
                     {
                         c.controller = new PathFindController(c, farmHouse, farmHouse.getRandomOpenPointInHouse(Game1.random), Random.Next(0, 4));
 
-                        if (currentCustom[VisitorName].Dialogues.Any<string>())
+                        var AnyDialogue = currentCustom?[VisitorName]?.Dialogues.Any<string>();
+                        bool hasCustomDialogue = AnyDialogue ?? false;
+
+                        if (CustomVisiting == true && hasCustomDialogue == true)
                         {
                             c.setNewDialogue(currentCustom[VisitorName].Dialogues[0], true, false);
 
@@ -359,7 +341,7 @@ namespace FarmVisitors
                                 this.Monitor.Log($"Custom dialogue: {currentCustom[VisitorName].Dialogues[0]}");
                             }
 
-                            //remove this dialogue
+                            //remove this dialogue from the queue
                             currentCustom[VisitorName].Dialogues.RemoveAt(0);
                         }
                         else if (Random.Next(0, 11) <= 5 && FurnitureList is not null)
@@ -377,17 +359,8 @@ namespace FarmVisitors
                             this.Monitor.Log($"ControllerTime = {ControllerTime}");
                         }
                     }
-                    else
-                    {
-                        this.Monitor.Log($"Time of arrival equals current time. NPC won't move around");
-                    }
 
-                    //to check that value isnt 0 AND that its a valid one. (doesnt need parsing since thats done at the start)
-                    if (currentCustom[VisitorName].To < 610)
-                    {
-                        DurationSoFar++;
-                    }
-
+                    DurationSoFar++;
                     if (Config.Verbose == true)
                     {
                         this.Monitor.Log($"DurationSoFar = {DurationSoFar} ({DurationSoFar * 10} minutes).");
@@ -400,19 +373,6 @@ namespace FarmVisitors
             CleanTempData();
 
             ReloadCustomschedules();
-
-            if (BlacklistRaw != Config.Blacklist && !string.IsNullOrWhiteSpace(Config.Blacklist))
-            {
-                ParseBlacklist();
-            }
-            else if (string.IsNullOrWhiteSpace(Config.Blacklist))
-            {
-                BlacklistRaw = null;
-                if (BlacklistParsed is not null)
-                {
-                    BlacklistParsed.Clear();
-                }
-            }
 
             if (Config.Verbose == true)
             {
@@ -500,6 +460,10 @@ namespace FarmVisitors
                 }
             }
 
+            if (NameAndLevel is not null)
+            {
+                NameAndLevel.Clear();
+            }
             if (RepeatedByLV is not null)
             {
                 RepeatedByLV.Clear();
@@ -565,7 +529,7 @@ namespace FarmVisitors
                 return;
             }
 
-            var schedules = ModHelper.GameContent.Load<Dictionary<string, ScheduleData>>("mistyspring.farmhousevisits/Schedules");
+            var schedules = Help.GameContent.Load<Dictionary<string, ScheduleData>>("mistyspring.farmhousevisits/Schedules");
             if (schedules is not null)
             {
                 foreach (KeyValuePair<string, ScheduleData> pair in schedules)
@@ -588,11 +552,16 @@ namespace FarmVisitors
             var RChoice = Random.Next(0, (RepeatedByLV.Count));
             VisitorName = RepeatedByLV[RChoice];
             this.Monitor.Log($"Random: {RChoice}; VisitorName= {VisitorName}");
+            NPC visit = Game1.getCharacterFromName(VisitorName);
 
-            if (!TodaysVisitors.Contains(VisitorName))
+            var isHospitalDay = Utility.IsHospitalVisitDay(VisitorName);
+            var visitedToday = TodaysVisitors.Contains(VisitorName);
+            var visitingIsland = Game1.IsVisitingIslandToday(VisitorName);
+            var isSleeping = visit.isSleeping.Value;
+
+            if (!visitedToday && !isHospitalDay && !visitingIsland && !isSleeping)
             {
                 //save values
-                NPC visit = Game1.getCharacterFromName(VisitorName);
                 VisitorData = new TempNPC(visit);
 
                 CustomVisiting = false;
@@ -613,13 +582,30 @@ namespace FarmVisitors
             }
             else
             {
+                visit = null;
                 VisitorName = null;
-                this.Monitor.Log($"{VisitorName} has already visited the Farm today!");
+
+                if(visitedToday)
+                {
+                    this.Monitor.Log($"{VisitorName} has already visited the Farm today!");
+                }
+                if(isHospitalDay)
+                {
+                    this.Monitor.Log($"{VisitorName} has a hospital visit scheduled today. They won't visit the farmer.");
+                }
+                if(visitingIsland)
+                {
+                    this.Monitor.Log($"{VisitorName} is visiting the island today!");
+                }
+                if(isSleeping)
+                {
+                    this.Monitor.Log($"{VisitorName} is sleeping right now.");
+                }
+
             }
         }
         private void GetAllVisitors()
         {
-
             if (!string.IsNullOrWhiteSpace(Config.Blacklist))
             {
                 ParseBlacklist();
@@ -627,10 +613,7 @@ namespace FarmVisitors
             NPCNames = Game1.content.Load<Dictionary<string, string>>("Data\\NPCDispositions").Keys.ToList<string>();
 
             MaxTimeStay = (Config.Duration - 1);
-            if (Config.Verbose == true)
-            {
-                this.Monitor.Log($"MaxTimeStay = {MaxTimeStay}; Config.Duration = {Config.Duration};");
-            }
+            this.Monitor.Log($"MaxTimeStay = {MaxTimeStay}; Config.Duration = {Config.Duration};");
 
             farmHouseAsLocation = Utility.getHomeOfFarmer(Game1.MasterPlayer);
             farmHouse = Utility.getHomeOfFarmer(Game1.MasterPlayer);
@@ -662,13 +645,13 @@ namespace FarmVisitors
                         var _IsDivorced = Values.IsDivorced(npcn);
                         var _IsMarried = Values.IsMarriedToPlayer(npcn);
 
-                        if (_IsMarried == false && hearts is not 0) //npc isnt married and value isnt 0
+                        if (_IsMarried == false && hearts is not 0)
                         {
                             if (BlacklistParsed is not null)
                             {
                                 if (BlacklistParsed.Contains(npcn.Name))
                                 {
-                                    this.Monitor.Log($"{npcn.displayName} (internal name {npcn.Name}) is in the blacklist.", LogLevel.Info);
+                                    this.Monitor.Log($"{npcn.displayName} is in the blacklist.", LogLevel.Info);
                                 }
                                 else
                                 {
@@ -677,11 +660,20 @@ namespace FarmVisitors
                             }
                             else if (_IsDivorced == true)
                             {
-                                this.Monitor.Log($"{name} is Divorced. They won't visit player");
+                                this.Monitor.Log($"{name} is Divorced.");
                             }
                             else
                             {
-                                NameAndLevel.Add(name, hearts);
+                                if (npcn.Name.Equals("Dwarf"))
+                                {
+                                    if(!Game1.MasterPlayer.canUnderstandDwarves)
+                                        this.Monitor.Log("Player can't understand dwarves yet!");
+                                    
+                                    else
+                                        NameAndLevel.Add(name, hearts);
+                                }
+                                else
+                                    NameAndLevel.Add(name, hearts);
                             }
                         }
                         else
@@ -691,10 +683,14 @@ namespace FarmVisitors
                                 MarriedNPCs.Add(npcn.Name);
                                 this.Monitor.Log($"Adding {npcn.displayName} (internal name {npcn.Name}) to married list...");
                             }
-                            else
+
+                            if (_IsDivorced)
                             {
-                                if (Config.Verbose == true)
-                                    this.Monitor.Log($"{name} won't be added to the list.");
+                                this.Monitor.Log($"{name} is Divorced. They won't visit player");
+                            }
+                            else if (Config.Verbose == true)
+                            {
+                                this.Monitor.Log($"{name} won't be added to the list.");
                             }
                         }
                     }
@@ -714,15 +710,6 @@ namespace FarmVisitors
                 RepeatedByLV.AddRange(tempdict);
             }
             this.Monitor.Log(call);
-            if (Config.Verbose == true)
-            {
-                string LongString = "ALL values:   ";
-                foreach (string item in RepeatedByLV)
-                {
-                    LongString = $"{LongString}, {item}";
-                }
-                this.Monitor.Log(LongString);
-            }
 
             if (FurnitureList is not null)
             {
@@ -755,10 +742,7 @@ namespace FarmVisitors
                     else if (NPCNames.Contains(arg2[0]))
                     {
                         VisitorName = arg2[0];
-                        if (Config.Verbose == true)
-                        {
-                            this.Monitor.Log($"VisitorName= {VisitorName}");
-                        }
+                        this.Monitor.Log($"VisitorName= {VisitorName}");
 
                         if (!TodaysVisitors.Contains(VisitorName))
                         {
@@ -774,10 +758,7 @@ namespace FarmVisitors
                             TimeOfArrival = Game1.timeOfDay;
                             ControllerTime = 0;
 
-                            if (Config.Verbose == true)
-                            {
-                                this.Monitor.Log($"\nHasAnyVisitors set to true.\n{VisitorName} will begin visiting player.\nTimeOfArrival = {TimeOfArrival};\nControllerTime = {ControllerTime};");
-                            }
+                            this.Monitor.Log($"\nHasAnyVisitors set to true.\n{VisitorName} will begin visiting player.\nTimeOfArrival = {TimeOfArrival};\nControllerTime = {ControllerTime};");
                         }
                         else if (arg2[1] is "force")
                         {
@@ -793,10 +774,7 @@ namespace FarmVisitors
                             TimeOfArrival = Game1.timeOfDay;
                             ControllerTime = 0;
 
-                            if (Config.Verbose == true)
-                            {
-                                this.Monitor.Log($"\nHasAnyVisitors set to true.\n{VisitorName} will begin visiting player.\nTimeOfArrival = {TimeOfArrival};\nControllerTime = {ControllerTime};");
-                            }
+                            this.Monitor.Log($"\nHasAnyVisitors set to true.\n{VisitorName} will begin visiting player.\nTimeOfArrival = {TimeOfArrival};\nControllerTime = {ControllerTime};");
                         }
                         else
                         {
@@ -821,7 +799,46 @@ namespace FarmVisitors
         }
         private void PrintAll(string command, string[] arg2)
         {
-            this.Monitor.Log($"\n\nVisitorName = {VisitorName}; \nIsConfigValid = {IsConfigValid}; \nHasAnyVisitors = {HasAnyVisitors}; \nTimeOfArrival = {TimeOfArrival}; \nCounterToday = {CounterToday}; \nDurationSoFar = {DurationSoFar}; \nMaxTimeStay = {MaxTimeStay}; \nControllerTime = {ControllerTime}, \ncurrentCustom count = {currentCustom?.Count}; \nVisitorData: \n   Name = {VisitorData.Name},\n   Facing = {VisitorData.Facing}, \n  AnimationMessage = {VisitorData.AnimationMessage}, \n  Dialogues pre-visit: {VisitorData.DialoguePreVisit.Count}");
+            this.Monitor.Log($"\n\nVisitorName = {VisitorName}; \nIsConfigValid = {IsConfigValid}; \nHasAnyVisitors = {HasAnyVisitors}; \nTimeOfArrival = {TimeOfArrival}; \nCounterToday = {CounterToday}; \nDurationSoFar = {DurationSoFar}; \nMaxTimeStay = {MaxTimeStay}; \nControllerTime = {ControllerTime}, \ncurrentCustom count = {currentCustom?.Count}; \nVisitorData: \n   Name = {VisitorData.Name},\n   Facing = {VisitorData.Facing}, \n  AnimationMessage = {VisitorData.AnimationMessage}, \n  Dialogues pre-visit: {VisitorData.CurrentPreVisit.Count}");
+        }
+        private void PrintInLaws(string arg1, string[] arg2)
+        {
+            if(!Context.IsWorldReady)
+            {
+                this.Monitor.Log(this.Helper.Translation.Get("error.WorldNotReady"),LogLevel.Error);
+            }
+            else
+            {
+                string result = "\n";
+
+                foreach (var pair in InLaws)
+                {
+                    string pairvalue = "";
+                    int lastvalue = pair.Value.Count - 1;
+                    foreach (string name in pair.Value)
+                    {
+                        if (pair.Value[lastvalue].Equals(name))
+                        {
+                            pairvalue += $"{name}.";
+                        }
+                        else
+                        {
+                            pairvalue += $"{name}, ";
+                        }
+                    }
+
+                    result += $"\n{pair.Key}: {pairvalue}";
+                }
+
+                if (result.Equals("\n"))
+                {
+                    this.Monitor.Log("No in-laws found. (Searched all NPCs with friendship)", LogLevel.Warn);
+                }
+                else
+                {
+                    this.Monitor.Log(result, LogLevel.Info);
+                }
+            }
         }
 
         /*  data  */
@@ -829,9 +846,10 @@ namespace FarmVisitors
         private List<string> RepeatedByLV = new();
         private List<string> TodaysVisitors = new();
         private static Random random;
+        private bool isFestivalToday;
 
-        internal static IMonitor ModMonitor { get; private set; }
-        internal static IModHelper ModHelper { get; private set; }
+        internal static IMonitor Mon { get; private set; }
+        internal static IModHelper Help { get; private set; }
         internal static TempNPC VisitorData { get; private set; }
 
         internal static Random Random
@@ -844,6 +862,7 @@ namespace FarmVisitors
         }
 
         internal GameLocation farmHouseAsLocation;
+
         internal FarmHouse farmHouse { get; private set; }
 
         internal static string BlacklistRaw { get; private set; }
@@ -865,7 +884,8 @@ namespace FarmVisitors
         //public data
         public static Dictionary<string, List<string>> InLaws { get; private set; } = new();
         public static List<string> MarriedNPCs { get; private set; } = new();
-        public static bool RelativeComments { get; private set; }
+        public static string InLawDialogue { get; private set; }
+        public static bool ReplacerOn { get; private set; }
         public static string VisitorName { get; private set; }
     }
 }

@@ -1,4 +1,6 @@
-﻿using StardewModdingAPI;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using System;
@@ -13,19 +15,30 @@ namespace FarmVisitors
     {
         public static string ExtrasTL()
         {
-            string result = ModEntry.ModHelper.Translation.Get("config.Extras");
+            string result = ModEntry.Help.Translation.Get("config.Extras");
             return result;
         }
         public static string BlacklistTL()
         {
-            string result = ModEntry.ModHelper.Translation.Get("config.Blacklist.name");
+            string result = ModEntry.Help.Translation.Get("config.Blacklist.name");
             return result;
         }
         public static string BlacklistTTP()
         {
-            string result = ModEntry.ModHelper.Translation.Get("config.Blacklist.description");
+            string result = ModEntry.Help.Translation.Get("config.Blacklist.description");
             return result;
         }
+        internal static string VisitConfiguration()
+        {
+            string result = ModEntry.Help.Translation.Get("config.VisitConfiguration");
+            return result;
+        }
+        internal static string DebugTL()
+        {
+            string result = ModEntry.Help.Translation.Get("config.Debug.name");
+            return result;
+        }
+
         internal static void AssetRequest(object sender, AssetRequestedEventArgs e)
         {
             if (e.Name.Equals("mistyspring.farmhousevisits/Schedules"))
@@ -38,22 +51,22 @@ namespace FarmVisitors
         {
             if(pair.Value.From is 600 || pair.Value.From is 0)
             {
-                ModEntry.ModMonitor.Log(ModEntry.ModHelper.Translation.Get("CantBe600"), LogLevel.Error);
+                ModEntry.Mon.Log(ModEntry.Help.Translation.Get("CantBe600"), LogLevel.Error);
                 return false;
             }
             if(pair.Value.To is 2600)
             {
-                ModEntry.ModMonitor.Log(ModEntry.ModHelper.Translation.Get("CantBe2600"), LogLevel.Error);
+                ModEntry.Mon.Log(ModEntry.Help.Translation.Get("CantBe2600"), LogLevel.Error);
                 return false;
             }
             if(!ModEntry.NameAndLevel.Keys.Contains(pair.Key))
             {
-                ModEntry.ModMonitor.Log(ModEntry.ModHelper.Translation.Get("NotInSave"), LogLevel.Error);
+                ModEntry.Mon.Log(ModEntry.Help.Translation.Get("NotInSave"), LogLevel.Error);
                 return false;
             }
             if(pair.Value.From > pair.Value.To && pair.Value.To is not 0)
             {
-                ModEntry.ModMonitor.Log(ModEntry.ModHelper.Translation.Get("FromHigherThanTo"), LogLevel.Error);
+                ModEntry.Mon.Log(ModEntry.Help.Translation.Get("FromHigherThanTo"), LogLevel.Error);
                 return false;
             }
             return true;
@@ -64,36 +77,6 @@ namespace FarmVisitors
      * Gets dialogue for when ur in-laws visit */
     internal class Vanillas
     {
-        public static bool IsCheckupToday(string who)
-        {
-            string season = who switch 
-            {
-                here
-                _ => 0,
-            };
-            int day = who switch
-            {
-                here
-                _ => 0,
-            };
-
-            if(day = Game1.day && season.Equals(Game1.season))
-            {
-                return true;
-            }
-            else if (season.Equals("special"))
-            {
-                List <int> ListOfDays = ReturnSpecial();
-                if(ListOfDays.Contains(Game1.day))
-                {
-                    return true;
-                }
-
-                return false;
-            }
-
-            return false;
-        }
         public static bool InLawOfSpouse(string who)
         {
             string of;
@@ -163,32 +146,32 @@ namespace FarmVisitors
                 result = who switch
                 {
                     //for abigail
-                    "Caroline" => ModEntry.ModHelper.Translation.Get($"InLaw.Abigail.{ran}"),
-                    "Pierre" => ModEntry.ModHelper.Translation.Get($"InLaw.Abigail.{ran}"),
+                    "Caroline" => ModEntry.Help.Translation.Get($"InLaw.Abigail.{ran}"),
+                    "Pierre" => ModEntry.Help.Translation.Get($"InLaw.Abigail.{ran}"),
 
                     //for alex
-                    "Evelyn" => ModEntry.ModHelper.Translation.Get($"InLaw.Alex.{ran}"),
-                    "George" => ModEntry.ModHelper.Translation.Get($"InLaw.Alex.{ran}"),
+                    "Evelyn" => ModEntry.Help.Translation.Get($"InLaw.Alex.{ran}"),
+                    "George" => ModEntry.Help.Translation.Get($"InLaw.Alex.{ran}"),
 
                     //for haley and emily
-                    "Emily" => ModEntry.ModHelper.Translation.Get($"InLaw.Haley.{ran}"),
-                    "Haley" => ModEntry.ModHelper.Translation.Get($"InLaw.Emily.{ran}"),
+                    "Emily" => ModEntry.Help.Translation.Get($"InLaw.Haley.{ran}"),
+                    "Haley" => ModEntry.Help.Translation.Get($"InLaw.Emily.{ran}"),
 
                     //for maru
-                    "Demetrius" => ModEntry.ModHelper.Translation.Get($"InLaw.Maru.{ran}"),
+                    "Demetrius" => ModEntry.Help.Translation.Get($"InLaw.Maru.{ran}"),
 
                     //for penny
-                    "Pam" => ModEntry.ModHelper.Translation.Get($"InLaw.Penny.{ran}"),
+                    "Pam" => ModEntry.Help.Translation.Get($"InLaw.Penny.{ran}"),
 
                     //for sam
-                    "Jodi" => ModEntry.ModHelper.Translation.Get($"InLaw.Sam.{ran}"),
-                    "Kent" => ModEntry.ModHelper.Translation.Get($"InLaw.Sam.{ran}"),
+                    "Jodi" => ModEntry.Help.Translation.Get($"InLaw.Sam.{ran}"),
+                    "Kent" => ModEntry.Help.Translation.Get($"InLaw.Sam.{ran}"),
 
                     //for sebastian
-                    "Robin" => ModEntry.ModHelper.Translation.Get($"InLaw.Sebastian.{ran}"),
+                    "Robin" => ModEntry.Help.Translation.Get($"InLaw.Sebastian.{ran}"),
 
                     //for shane
-                    "Marnie" => ModEntry.ModHelper.Translation.Get($"InLaw.Shane.{ran}"),
+                    "Marnie" => ModEntry.Help.Translation.Get($"InLaw.Shane.{ran}"),
 
                     _ => null,
                 };
@@ -197,7 +180,7 @@ namespace FarmVisitors
             {
                 int ran = Game1.random.Next(1, 16);
 
-                string notParsed = ModEntry.ModHelper.Translation.Get($"InLaw.Generic.{ran}");
+                string notParsed = ModEntry.Help.Translation.Get($"InLaw.Generic.{ran}");
                 string spousename = GetSpouseName(who);
 
                 result = string.Format(notParsed, spousename);
@@ -236,17 +219,14 @@ namespace FarmVisitors
             {
                 if (spouse.Equals("Maru") && RelatedTo.Equals("Maru&Seb"))
                 {
-                    //string name = Game1.getCharacterFromName("Maru").displayName;
                     return "Maru";
                 }
                 else if(spouse.Equals("Sebastian") && RelatedTo.Equals("Maru&Seb"))
                 {
-                    //string name = Game1.getCharacterFromName("Sebastian").displayName;
                     return "Sebastian";
                 }
                 else if(spouse.Equals(RelatedTo))
                 {
-                    //string name = Game1.getCharacterFromName(spouse).displayName;
                     return spouse;
                 }
             }
@@ -263,12 +243,12 @@ namespace FarmVisitors
             
             if(kids.Count is 1)
             {
-                var notformatted = ModEntry.ModHelper.Translation.Get($"ask.singlechild.{ran}");
+                var notformatted = ModEntry.Help.Translation.Get($"ask.singlechild.{ran}");
                 result = String.Format(notformatted, kids[0].Name);
             }
             else
             {
-                var notformatted = ModEntry.ModHelper.Translation.Get($"ask.multiplechild.{ran}");
+                var notformatted = ModEntry.Help.Translation.Get($"ask.multiplechild.{ran}");
                 result = String.Format(notformatted, kids[0].Name, kids[1].Name);
             }
 
@@ -285,7 +265,7 @@ namespace FarmVisitors
         {
             if(!reference.Keys.Contains(who))
             {
-                ModEntry.ModMonitor.Log("NPC not in dictionary!");
+                ModEntry.Mon.Log("NPC not in dictionary!");
                 return null;
             }
 
@@ -346,7 +326,7 @@ namespace FarmVisitors
         public static string GetDialogueRaw()
         {
             int ran = Game1.random.Next(0, 16);
-            string Raw = ModEntry.ModHelper.Translation.Get($"InLaw.Generic.{ran}");
+            string Raw = ModEntry.Help.Translation.Get($"InLaw.Generic.{ran}");
 
             //string result = string.Format(Raw, GetSpouseName(who));
             

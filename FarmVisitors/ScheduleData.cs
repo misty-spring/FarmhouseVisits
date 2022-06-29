@@ -47,7 +47,8 @@ namespace FarmVisitors
         public string CurrentLocation { get; set; }
         public Vector2 Position { get; set; }
         public int Facing { get; set; }
-        public Stack<Dialogue> DialoguePreVisit { get; set; }
+        public Stack<Dialogue> CurrentPreVisit { get; set; }
+        public Dictionary<string, string> AllPreVisit { get; }
 
         public TempNPC()
         {
@@ -57,12 +58,16 @@ namespace FarmVisitors
         public TempNPC(TempNPC n)
         {
             Name = n.Name;
+
             Sprite = n.Sprite;
             AnimationMessage = n.AnimationMessage;
+
             CurrentLocation = n.CurrentLocation;
             Position = n.Position;
             Facing = n.Facing;
-            DialoguePreVisit = n.DialoguePreVisit;
+
+            CurrentPreVisit = n.CurrentPreVisit;
+            AllPreVisit = n.AllPreVisit;
         }
 
         public TempNPC(NPC visit)
@@ -76,7 +81,8 @@ namespace FarmVisitors
             Position = visit.Position;
             Facing = visit.facingDirection.Value;
             
-            DialoguePreVisit = visit.CurrentDialogue;
+            CurrentPreVisit = visit.CurrentDialogue;
+            AllPreVisit = visit.Dialogue;
         }
     }
 }
