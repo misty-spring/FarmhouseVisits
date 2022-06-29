@@ -65,7 +65,7 @@ Empty template:
 ```
 ## Contributing
 If you'd like to translate this mod, you can either: 1. Post the translation in nexus OR 2. Send the i18n json to me so i integrate it into the mod.
-Currently, there's translations for: Spanish, English (both in original mod), Chinese 
+Currently, there's translations for: Spanish, English (both in original mod), Russian (by crybaby00000), Turkish (by BURAKMESE).
 
 ## For more info
 You can add as many dialogues as you want, but they'll be only updated every 10 minutes.
