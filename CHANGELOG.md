@@ -1,3 +1,5 @@
+([versión en español aquí](https://github.com/misty-spring/FarmhouseVisits/blob/main/CHANGELOG-es.md))
+
 ## 1.3.0
 - Fixed grammar issues.
 - NPCs in island won't visit.
@@ -9,7 +11,6 @@
 - Added debug commands to config screen.
 - Turkish translation (thanks to BURAKMESE!)
 - Russian translation (thanks to crybaby00000!)
-- Other implementations.
 - Misc performance fixes.
 
 ## 1.2.2
