@@ -1,13 +1,16 @@
 ## 1.3.0
 - Fixed grammar issues.
 - NPCs in island won't visit.
-- Visits won't occur in festival days.
+- Visits won't occur in festival nor hospital days.
 - If a NPC falls asleep in your house, they immediately retire.
 - Added in-law comments 
 - - This includes commenting on your spouse and kids.
-- Misc performance fixes.
+- - it is also configurable (mod-friendly and replacer-friendly).
 - Added debug commands to config screen.
+- Turkish translation (thanks to BURAKMESE!)
+- Russian translation (thanks to crybaby00000!)
 - Other implementations.
+- Misc performance fixes.
 
 ## 1.2.2
 - Fixed indexing errors when returning to title / ending the day. 
