@@ -210,7 +210,7 @@ namespace FarmVisitors
 
                 if(npcv.endOfRouteMessage.Value is not null)
                 {
-                    npcv.endOfRouteMessage.Value.Remove(0);
+                    npcv.endOfRouteMessage?.Value.Remove(0);
                     npcv.endOfRouteMessage.Value = null;
                 }
             }
@@ -293,7 +293,7 @@ namespace FarmVisitors
                 }
             }
 
-            if(ModEntry.InLawDialogue is "VanillaAndMod")
+            if(ModEntry.InLawDialogue is "VanillaAndMod" || ModEntry.ReplacerOn)
             {
                 var spouse = Moddeds.GetRelativeName(name);
                 if (spouse is not null && !addedAlready)
