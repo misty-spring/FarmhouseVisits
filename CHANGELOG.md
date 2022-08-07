@@ -6,6 +6,7 @@
 - Fixed bugs in custom visits.
 - Renamed "NPC" to its equivalent "PNJ" in spanish.
 - A lot of refactoring.
+- New dialogues when NPCs leave.
 
 ## 1.4.0
 - Added chinese translation (by SHIZHI01420142)
