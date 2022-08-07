@@ -77,9 +77,9 @@ namespace FarmVisitors
                 ModEntry.Mon.Log($"enterDialogue: {enterDialogue}");
                 visitor.setNewDialogue("testing if dialogue works via setNewDialogue.", true, true);
                 visitor.CurrentDialogue.Push(new Dialogue("this is a new Dialogue being pushed to CurrentDialogue.", visitor));
+                visitor.CurrentDialogue.Push(new Dialogue($"TESTING, {enterDialogue}", visitor));
 #endif
                 visitor.setNewDialogue(enterDialogue, true, true);
-                visitor.CurrentDialogue.Push(new Dialogue($"", visitor)); //TESTING, {enterDialogue}
 
                 if (Game1.currentLocation == farmHouse)
                 {
