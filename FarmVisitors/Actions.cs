@@ -23,8 +23,6 @@ namespace FarmVisitors
                     return;
                 }
 
-                //NPC visitor = visitor;
-
                 bool isanimating = visitor.doingEndOfRouteAnimation.Value;
 
                 if(isanimating == true || (visitor.doingEndOfRouteAnimation is not null && visitor.doingEndOfRouteAnimation.Value is true))
@@ -32,12 +30,12 @@ namespace FarmVisitors
                     RemoveAnimation(visitor);
                 }
                 /* not needed anymore since we exclude hospital days. however i like it and i restore the dialogues afterwards so it's fine*/
-
+                
                 if(visitor.CurrentDialogue.Any())
                 {
                     visitor.CurrentDialogue.Clear();
                 }
-
+                
                 visitor.ignoreScheduleToday = true;
                 visitor.temporaryController = null;
 
@@ -71,7 +69,7 @@ namespace FarmVisitors
 #if DEBUG
                     ModEntry.Mon.Log($"withGift: {withGift}");
 #endif
-                    enterDialogue = String.Format(withGift, Values.GetSeasonalGifts());
+                    enterDialogue = string.Format(withGift, Values.GetSeasonalGifts());
                 }
 #if DEBUG
                 ModEntry.Mon.Log($"enterDialogue: {enterDialogue}");
@@ -79,7 +77,8 @@ namespace FarmVisitors
                 visitor.CurrentDialogue.Push(new Dialogue("this is a new Dialogue being pushed to CurrentDialogue.", visitor));
                 visitor.CurrentDialogue.Push(new Dialogue($"TESTING, {enterDialogue}", visitor));
 #endif
-                visitor.setNewDialogue(enterDialogue, true, true);
+                visitor.setNewDialogue($"{enterDialogue}", true, true);
+                visitor.CurrentDialogue.Push(new Dialogue(Values.GetDialogueType(visitor, "Thanking"), visitor));
 
                 if (Game1.currentLocation == farmHouse)
                 {

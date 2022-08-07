@@ -73,6 +73,25 @@
 	"NPCRejected.Rude2": "Hey, anyone?",
 	"NPCRejected.Rude3": "Oh, come on. No one's home..? $2",
 
+	/* If allowed to enter and "ask for confirmation" is on */
+	//by social
+	"NPCThanking.Outgoing1": "Thanks. The weather outside was really rough.",
+	"NPCThanking.Outgoing2": "Your house looks different from the last time i came.#$b#Did you change something?",
+	"NPCThanking.Outgoing3": "%farm farm looks like a lot of work.",
+	"NPCThanking.Shy1": "Hope i'm not intruding.",
+	"NPCThanking.Shy2": "Thanks for letting me in.",
+	"NPCThanking.Shy3": "...",
+	//by manners
+	"NPCThanking.Polite1": "The walk here was really nice.",
+	"NPCThanking.Polite2": "Sorry for coming uninvited.",
+	"NPCThanking.Polite3": "Thanks, @.",
+	"NPCThanking.Neutral1": "So, do you like surprise visits?",
+	"NPCThanking.Neutral2": "Your farm outside looked good.",
+	"NPCThanking.Neutral3": "I like this place.",
+	"NPCThanking.Rude1": "Yeah, that's more like it.",
+	"NPCThanking.Rude2": "Finally...my feet were starting to hurt.",
+	"NPCThanking.Rude3": "It took so long to walk here.",
+
 	/* TN: introduction */
 	//by social anxiety
 	"NPCIntroduce.Outgoing1": "@? geliyorum!",
@@ -244,11 +263,22 @@
 	
 	/* TN: leaving */
 	//by social
-	"NPCRetiring.Outgoing": "Eğlenceliydi ama gitmem gerek. Sonra görüşürüz!",
-	"NPCRetiring.Shy": "Geç oluyor...Şimdi gideceğim. Seni görmek güzeldi.",
-	"NPCRetiring.Polite": "@, gitmem gerekecek...bazı şeyler yapmam gerek.#$b#Seni gördüğüme sevindim!$1",
-	"NPCRetiring.Neutral": "Hey, saate bak... bir süre önce ayrılmalıydım.#$b#Başka bir gün görüşürüz!$1",
-	"NPCRetiring.Rude": "Gideceğim...seni meşgul ediyor olmalıyım.#$b#Sonra görüşürüz.",
+	"NPCRetiring.Outgoing1": "Eğlenceliydi ama gitmem gerek. Sonra görüşürüz!",
+	"NPCRetiring.Outgoing2": "It's been a while now, so i'll get going.",
+	"NPCRetiring.Outgoing3": "See you later, @.",
+	"NPCRetiring.Shy1": "Geç oluyor...Şimdi gideceğim. Seni görmek güzeldi.",
+	"NPCRetiring.Shy2": "I have some things to do, but i had fun.#$b#Thank you, @.$1",
+	"NPCRetiring.Shy3": "Sorry, @. I'll have to leave now.#$b#Thank you for your time.",
+	//by manners
+	"NPCRetiring.Polite1": "@, gitmem gerekecek...bazı şeyler yapmam gerek.#$b#Seni gördüğüme sevindim!$1",
+	"NPCRetiring.Polite2": "I've been here a while...i'll take my leave.#$b#See you next time, @.",
+	"NPCRetiring.Polite3": "@, it was fun to see you.#$b#Hope your day goes well.",
+	"NPCRetiring.Neutral1": "Hey, saate bak... bir süre önce ayrılmalıydım.#$b#Başka bir gün görüşürüz!$1",
+	"NPCRetiring.Neutral2": "I'll leave now, before it gets darker outside.#$b#See you, @.",
+	"NPCRetiring.Neutral3": "You must have things to do, so i'll take my leave.#$b#I had fun.$1",
+	"NPCRetiring.Rude1": "Gideceğim...seni meşgul ediyor olmalıyım.#$b#Sonra görüşürüz.",
+	"NPCRetiring.Rude2": "I've been here too long... i'll be going.#$b#See you, @.",
+	"NPCRetiring.Rude3": "It's pretty late already. I'll see you another day.",
 
 	/* TN: gone while outside */
 	"NPCGoneWhileOutside": "Sen dışarıdayken, {0} izin aldı.",

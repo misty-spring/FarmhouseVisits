@@ -72,7 +72,26 @@
 	"NPCRejected.Rude1": "¿Y @ no está...?#$b#Tenía que pasarme a mí.$2",
 	"NPCRejected.Rude2": "Oye, ¿Hay alguien?...",
 	"NPCRejected.Rude3": "Oh, en serio. ¿No responde nadie? $2",
-	
+
+	/* If allowed to enter and "ask for confirmation" is on */
+	//by social
+	"NPCThanking.Outgoing1": "Gracias. El clima está bien fuerte afuera.",
+	"NPCThanking.Outgoing2": "Tu casa se ve diferente desde la última vez que vine.#$b#¿Le hiciste algo?",
+	"NPCThanking.Outgoing3": "La granja %farm parece mucho trabajo.",
+	"NPCThanking.Shy1": "Espero no interrumpir mucho.",
+	"NPCThanking.Shy2": "Gracias por dejarme entrar.",
+	"NPCThanking.Shy3": "...",
+	//by manners
+	"NPCThanking.Polite1": "La caminata hasta aquí fue agradable.",
+	"NPCThanking.Polite2": "Disculpa por venir de repente.",
+	"NPCThanking.Polite3": "Gracias, @.",
+	"NPCThanking.Neutral1": "Bueno, ¿Te gustan las visitas sorpresa?",
+	"NPCThanking.Neutral2": "Tu granja se veía bastante bien.",
+	"NPCThanking.Neutral3": "Me gusta este lugar.",
+	"NPCThanking.Rude1": "Ahora sí... esto me gusta.",
+	"NPCThanking.Rude2": "Por fin. Me estaban empezando a doler los pies.",
+	"NPCThanking.Rude3": "Me tomó mucho llegar aquí.",
+
 	/* TN: introduction */
 	/* based on social anxiety*/
 	"NPCIntroduce.Outgoing1": "¿@? ¡Voy a entrar!",
@@ -243,12 +262,22 @@
 
 	/* TN: leaving */
 	/* based on social anxiety*/
-	"NPCRetiring.Outgoing": "Tengo que irme... pero la pasé bien.#$b#¡Te veré luego!$1",
-	"NPCRetiring.Shy": "El tiempo vuela...tengo que irme.#$b#Me alegro de verte.",
+	"NPCRetiring.Outgoing1": "Tengo que irme... pero la pasé bien.#$b#¡Te veré luego!$1",
+	"NPCRetiring.Outgoing2": "He estado un buen rato, así que me iré por ahora.",
+	"NPCRetiring.Outgoing3": "Te veo después, @.",
+	"NPCRetiring.Shy1": "El tiempo vuela...tengo que irme.#$b#Me alegro de verte.",
+	"NPCRetiring.Shy2": "Tengo que hacer algunas cosas, pero la pasé bien.#$b#Gracias, @.$1",
+	"NPCRetiring.Shy3": "Disculpa, @. Me tengo que ir.#$b#Gracias por tu hospitalidad.",
 	/* based on manners*/
-	"NPCRetiring.Polite": "@, me tengo que retirar...tengo algunas cosas que hacer.#$b#¡Mucho gusto en verte!$1",
-	"NPCRetiring.Neutral": "Oye, mira la hora... debería haberme ido hace rato.#$b#Te veré otro día!$1",
-    "NPCRetiring.Rude": "Ya, me voy ahora...te he ocupado mucho tiempo ya.#$b#Te veo luego.",
+	"NPCRetiring.Polite1": "@, me tengo que retirar...tengo algunas cosas que hacer.#$b#¡Mucho gusto en verte!$1",
+	"NPCRetiring.Polite2": "He estado aquí bastante tiempo, así que me retiraré.#$b#Te veré otro día, @.",
+	"NPCRetiring.Polite3": "@, fue agradable verte.#$b#Espero que te vaya bien.",
+	"NPCRetiring.Neutral1": "Oye, mira la hora... debería haberme ido hace rato.#$b#Te veré otro día!$1",
+	"NPCRetiring.Neutral2": "Me voy ahora, antes de que se haga más tarde.#$b#Nos vemos, @.",
+	"NPCRetiring.Neutral3": "Debes tener cosas que hacer, así que me iré.#$b#Fue agradable.$1",
+	"NPCRetiring.Rude1": "Ya, me voy ahora...te he ocupado mucho tiempo ya.#$b#Te veo luego.",
+	"NPCRetiring.Rude2": "He pasado aquí mucho tiempo...#$b#Nos vemos, @.",
+	"NPCRetiring.Rude3": "Se está haciendo tarde. Te veré otro día.",
 
 	/* TN: gone while outside */
 	"NPCGoneWhileOutside": "Mientras estabas afuera, {0} se retiró.",
