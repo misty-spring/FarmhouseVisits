@@ -19,7 +19,7 @@ namespace FarmVisitors
             {
                 if (!Values.IsVisitor(visitor.Name))
                 {
-                    ModEntry.Mon.Log($"{visitor.displayName} is not a visitor!");
+                    ModEntry.Log($"{visitor.displayName} is not a visitor!", LogLevel.Trace);
                     return;
                 }
 
@@ -42,7 +42,7 @@ namespace FarmVisitors
                 if(HadConfirmation == false)
                 {
                     //Game1.drawDialogue(npcv, Values.GetIntroDialogue(npcv));
-                    Game1.drawDialogue(visitor, Values.GetDialogueType(visitor, "Introduce"));
+                    Game1.drawDialogue(visitor, Values.GetDialogueType(visitor, DialogueType.Introduce));
                 }
 
                 var position = farmHouse.getEntryLocation();
@@ -51,7 +51,7 @@ namespace FarmVisitors
                 Game1.warpCharacter(visitor, "FarmHouse", position);
 
                 //npcv.showTextAboveHead(string.Format(Values.GetTextOverHead(npcv),Game1.MasterPlayer.Name));
-                visitor.showTextAboveHead(string.Format(Values.GetDialogueType(visitor, "WalkIn"),Game1.MasterPlayer.Name));
+                visitor.showTextAboveHead(string.Format(Values.GetDialogueType(visitor, DialogueType.WalkIn),Game1.MasterPlayer.Name));
 
                 //set before greeting because "Push" leaves dialogues at the top
                 if (Game1.MasterPlayer.isMarried())
@@ -62,23 +62,27 @@ namespace FarmVisitors
 
                 //npcv.CurrentDialogue.Push(new Dialogue(string.Format(Values.StringByPersonality(npcv), Values.GetSeasonalGifts()), npcv)); <- doesnt work
 
-                var enterDialogue = Values.GetDialogueType(visitor, "Greet"); //string.Format(Values.StringByPersonality(npcv), Values.GetSeasonalGifts());
+                var enterDialogue = Values.GetDialogueType(visitor, DialogueType.Greet); //string.Format(Values.StringByPersonality(npcv), Values.GetSeasonalGifts());
                 if(ModEntry.ReceiveGift)
                 {
                     var withGift = $"{enterDialogue}#$b#{Values.GetGiftDialogue(visitor)}";
-#if DEBUG
-                    ModEntry.Mon.Log($"withGift: {withGift}");
-#endif
+
+                    if(ModEntry.Debug)
+                        ModEntry.Log($"withGift: {withGift}", LogLevel.Trace);
+
                     enterDialogue = string.Format(withGift, Values.GetSeasonalGifts());
                 }
-#if DEBUG
-                ModEntry.Mon.Log($"enterDialogue: {enterDialogue}");
-                visitor.setNewDialogue("testing if dialogue works via setNewDialogue.", true, true);
-                visitor.CurrentDialogue.Push(new Dialogue("this is a new Dialogue being pushed to CurrentDialogue.", visitor));
-                visitor.CurrentDialogue.Push(new Dialogue($"TESTING, {enterDialogue}", visitor));
-#endif
+
+                if (ModEntry.Debug)
+                {
+                    ModEntry.Log($"enterDialogue: {enterDialogue}", LogLevel.Trace);
+                    visitor.setNewDialogue("testing if dialogue works via setNewDialogue.", true, true);
+                    visitor.CurrentDialogue.Push(new Dialogue("This is a new Dialogue being pushed to CurrentDialogue.", visitor));
+                    visitor.CurrentDialogue.Push(new Dialogue($"TESTING, {enterDialogue}", visitor));
+                }
+
                 visitor.setNewDialogue($"{enterDialogue}", true, true);
-                visitor.CurrentDialogue.Push(new Dialogue(Values.GetDialogueType(visitor, "Thanking"), visitor));
+                visitor.CurrentDialogue.Push(new Dialogue(Values.GetDialogueType(visitor, DialogueType.Thanking), visitor));
 
                 if (Game1.currentLocation == farmHouse)
                 {
@@ -90,7 +94,7 @@ namespace FarmVisitors
             }
             catch(Exception ex)
             {
-                ModEntry.Mon.Log($"Error while adding to farmhouse: {ex}", LogLevel.Error);
+                ModEntry.Log($"Error while adding to farmhouse: {ex}", LogLevel.Error);
             }
 
         }
@@ -125,7 +129,7 @@ namespace FarmVisitors
                 }
                 catch (Exception ex)
                 {
-                    ModEntry.Mon.Log($"Error while returning special NPC ({c.Name}): {ex}", LogLevel.Error);
+                    ModEntry.Log($"Error while returning special NPC ({c.Name}): {ex}", LogLevel.Error);
                 }
             }
 
@@ -210,7 +214,7 @@ namespace FarmVisitors
             }
             catch (Exception ex)
             {
-                ModEntry.Mon.Log($"Error while returning NPC: {ex}", LogLevel.Error);
+                ModEntry.Log($"Error while returning NPC: {ex}", LogLevel.Error);
             }
         }
 
@@ -218,7 +222,7 @@ namespace FarmVisitors
         {
             try
             {
-                ModEntry.Mon.Log($"Stopping animation for {npcv.displayName} and resizing...");
+                ModEntry.Log($"Stopping animation for {npcv.displayName} and resizing...", LogLevel.Trace);
 
                 npcv.Sprite.StopAnimation();
                 npcv.Sprite.SpriteWidth = 16;
@@ -236,7 +240,7 @@ namespace FarmVisitors
             }
             catch (Exception ex)
             {
-                ModEntry.Mon.Log($"Error while stopping {npcv.displayName} animation: {ex}", LogLevel.Error);
+                ModEntry.Log($"Error while stopping {npcv.displayName} animation: {ex}", LogLevel.Error);
             }
         }
 
@@ -248,7 +252,12 @@ namespace FarmVisitors
             string cellar = farmHouse.GetCellarName();
             !currentloc.Equals(cellar)*/
 
-            if (Game1.currentLocation == farmHouse && Game1.currentLocation.Name.StartsWith("FarmHouse"))
+            var currentLocation = Game1.currentLocation;
+
+            var inFarm = FarmOutside.NPCinScreen(); //currentLocation.Name == Game1.getFarm().Name <- redundant, inScreen checks by map
+
+
+            if (currentLocation == farmHouse || inFarm)
             {
                 try
                 {
@@ -261,14 +270,17 @@ namespace FarmVisitors
                 }
                 catch (Exception ex)
                 {
-                    ModEntry.Mon.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
+                    ModEntry.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
                 }
                 finally
                 {
                     //Game1.drawDialogue(c, Values.GetRetireDialogue(c));
-                    Game1.drawDialogue(c, Values.GetDialogueType(c, "Retiring"));
+                    Game1.drawDialogue(c, Values.GetDialogueType(c, DialogueType.Retiring));
                     ReturnToNormal(c, currentTime);
-                    Game1.currentLocation.playSound("doorClose", NetAudio.SoundContext.NPC);
+                    if(!inFarm)
+                    {
+                        Game1.currentLocation.playSound("doorClose", NetAudio.SoundContext.NPC);
+                    }
                 }
             }
             else
@@ -279,7 +291,7 @@ namespace FarmVisitors
                 }
                 catch (Exception ex)
                 {
-                    ModEntry.Mon.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
+                    ModEntry.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
                 }
             }
         }
@@ -325,7 +337,7 @@ namespace FarmVisitors
             {
                 if (!Values.IsVisitor(c.Name))
                 {
-                    ModEntry.Mon.Log($"{c.displayName} is not a visitor!");
+                    ModEntry.Log($"{c.displayName} is not a visitor!", LogLevel.Trace);
                     return;
                 }
 
@@ -353,7 +365,7 @@ namespace FarmVisitors
                     else
                     {
                         //Game1.drawDialogue(npcv, Values.GetIntroDialogue(npcv));
-                        Game1.drawDialogue(npcv, Values.GetDialogueType(npcv, "Introduce"));
+                        Game1.drawDialogue(npcv, Values.GetDialogueType(npcv, DialogueType.Introduce));
                     }
                 }
                 var position = farmHouse.getEntryLocation();
@@ -367,7 +379,7 @@ namespace FarmVisitors
                 }
                 else
                 {
-                    npcv.showTextAboveHead(string.Format(Values.GetDialogueType(npcv, "WalkIn"), Game1.MasterPlayer.Name));
+                    npcv.showTextAboveHead(string.Format(Values.GetDialogueType(npcv, DialogueType.WalkIn), Game1.MasterPlayer.Name));
                 }
 
                 if (!string.IsNullOrWhiteSpace(data.EntryDialogue))
@@ -376,7 +388,7 @@ namespace FarmVisitors
                 }
                 else
                 {
-                    var enterDialogue = Values.GetDialogueType(npcv, "Greet");
+                    var enterDialogue = Values.GetDialogueType(npcv, DialogueType.Greet);
                     if (ModEntry.ReceiveGift)
                     {
                         enterDialogue += $"#$b#" + Values.GetGiftDialogue(npcv);
@@ -394,7 +406,7 @@ namespace FarmVisitors
             }
             catch(Exception ex)
             {
-                ModEntry.Mon.Log($"Error while adding to farmhouse: {ex}", LogLevel.Error);
+                ModEntry.Log($"Error while adding to farmhouse: {ex}", LogLevel.Error);
             }
 
         }
@@ -413,7 +425,7 @@ namespace FarmVisitors
                 }
                 catch (Exception ex)
                 {
-                    ModEntry.Mon.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
+                    ModEntry.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
                 }
                 finally
                 {
@@ -431,7 +443,7 @@ namespace FarmVisitors
                 }
                 catch (Exception ex)
                 {
-                    ModEntry.Mon.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
+                    ModEntry.Log($"An error ocurred when pathing to entry: {ex}", LogLevel.Error);
                 }
             }
         }
