@@ -1,7 +1,7 @@
 ([versión en español aquí](https://github.com/misty-spring/FarmhouseVisits/blob/main/CHANGELOG-es.md))
 
 ## 1.6.2
-- Added thailandese translation (by watchakorn-18k)
+- Added Thai translation (by watchakorn-18k)
 
 ## 1.6.1
 - Updated portuguese translation
